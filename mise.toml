@@ -126,7 +126,9 @@ run = [
 
 [tasks.contract]
 description = "Check the namespace contract: workspace ids, read_from, agent-policy namespaces, package versions"
-run = "python scripts/check_contract.py"
+# The project .venv's Python (PyYAML comes with Ansible), as the pre-commit
+# hook uses: plain `python` can resolve to mise's, which has no PyYAML.
+run = ".venv/bin/python scripts/check_contract.py"
 
 [tasks.validate]
 description = "tofu init -backend=false + validate in every stack (no credentials)"
