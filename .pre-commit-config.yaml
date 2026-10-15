@@ -20,6 +20,10 @@ repos:
     hooks:
       - id: markdownlint-cli2
 
+  # Local hooks: tools pinned in mise.toml or the project .venv, no extra
+  # hook repositories.
+  - repo: local
+    hooks:
       # local, not the upstream ansible/ansible-lint hook: that hook manages
       # its own isolated pip env via additional_dependencies, which would
       # duplicate — and drift from — the ansible-core/ansible-lint/collection
