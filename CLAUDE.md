@@ -73,7 +73,7 @@ there depends on this repo.
 - A new workspace or host group passes `mise run contract` and
   `mise run tm:check` before the pull request.
 - Resource schemas come from the Terraform MCP server or
-  https://search.opentofu.org, never from memory.
+  <https://search.opentofu.org>, never from memory.
 
 ## Commands
 
