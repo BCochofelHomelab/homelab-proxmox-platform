@@ -2,3 +2,10 @@
 # protected-default ruleset requires its approval to merge.
 # Never assign a path to sre-team: the AI agent's machine user is in it.
 * @BCochofelHomelab/sre-lead
+
+# Ownership follows the scopes (docs/STACKS.md). In the homelab one team
+# owns everything; with more owners, add lines below the catch-all, e.g.
+#   /agent-policies/<group>/  @<org>/<host owners>
+#   /workspaces/<id>/         @<org>/<workspace owners>
+# A read_from grant is approved by the owner of the data being read: its
+# workspace's owners review any workspace.yaml that names it.

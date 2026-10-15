@@ -1,0 +1,30 @@
+name: Task / roadmap item
+description: Planned work — new phase item, improvement, or follow-up
+labels: ["task"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What needs to be done
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - platform/ (VMs)
+        - shared/ (security, data, fleet)
+        - agent-policies/
+        - workspaces/
+        - apps/ (k3s, OTel demo)
+        - Ansible
+        - SRE AI-autonomy (core's docs/SRE-AI.md)
+        - CI/CD / tooling
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why / context
