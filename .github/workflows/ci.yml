@@ -1,0 +1,62 @@
+---
+# Static validation only — no Proxmox, LAN or Elastic access from a
+# GitHub-hosted runner. This mirrors what pre-commit already checks
+# locally (including Terramate's generated code and the namespace
+# contract), as a backstop for anyone who skipped or bypassed hooks. A
+# dry-run job against the live homelab, like homelab-proxmox-core's
+# dry-run.yml, comes later (core's docs/SRE-AI.md); applying stays manual.
+name: CI
+
+# pull_request only, not push to main: the no-commit-to-branch hook can't
+# pass on main itself (homelab-proxmox-core's ci.yml has the full story).
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  # Install exactly what mise.lock records (versions and checksums). A
+  # mise.toml change without a matching `mise lock` fails here.
+  MISE_LOCKED: "1"
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # gitleaks scans the full history
+          persist-credentials: false # nothing here pushes
+
+      - name: Install pinned toolchain (mise)
+        # Installs everything mise.toml/mise.lock pin, creates .venv/, then
+        # the postinstall hook runs `mise run bootstrap` (Ansible + Galaxy
+        # collections, TFLint plugins, git hooks) — same setup as a laptop.
+        # Terramate comes from mise.toml too.
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        with:
+          version: "2026.10.9" # mise itself: the same as .devcontainer/post-create.sh
+        env:
+          GITHUB_TOKEN: ${{ github.token }} # tflint plugin downloads
+
+      - name: Cache pre-commit hook environments
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+
+      - name: Pre-warm Trivy's misconfiguration checks bundle
+        # Required: terraform_trivy runs once per stack, in parallel, and on a
+        # cold cache those runs race on the same checks bundle download
+        # (homelab-proxmox-core's ci.yml has the full story). Cache dir must
+        # match the hook's --cache-dir.
+        run: |
+          mkdir -p /tmp/.cache/trivy
+          trivy config --cache-dir /tmp/.cache/trivy --config .trivy.yaml platform >/dev/null
+
+      - name: pre-commit (all files), gitleaks (full history), Terramate, namespace contract
+        env:
+          GITHUB_TOKEN: ${{ github.token }} # tflint plugin downloads
+        run: mise run check
