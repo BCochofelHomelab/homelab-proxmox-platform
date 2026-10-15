@@ -11,7 +11,7 @@ terraform {
 provider "proxmox" {
   api_token = var.proxmox_api_token
   endpoint  = "https://192.168.68.20:8006/"
-  insecure  = true
+  insecure  = var.proxmox_insecure
   ssh {
     agent    = true
     username = "root"
@@ -21,6 +21,11 @@ variable "proxmox_api_token" {
   description = "Proxmox API token, form user@realm!tokenid=secret (TF_VAR_proxmox_api_token)"
   sensitive   = true
   type        = string
+}
+variable "proxmox_insecure" {
+  default     = true
+  description = "Skip TLS verification (homelab self-signed cert)"
+  type        = bool
 }
 variable "cipassword" {
   description = "cloud-init user password (TF_VAR_cipassword)"

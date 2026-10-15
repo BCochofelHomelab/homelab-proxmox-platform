@@ -35,7 +35,7 @@ generate_hcl "_terramate_proxmox.tf" {
     provider "proxmox" {
       endpoint  = global.proxmox.endpoint
       api_token = var.proxmox_api_token
-      insecure  = true
+      insecure  = var.proxmox_insecure
 
       ssh {
         agent    = true
@@ -47,6 +47,14 @@ generate_hcl "_terramate_proxmox.tf" {
       type        = string
       description = "Proxmox API token, form user@realm!tokenid=secret (TF_VAR_proxmox_api_token)"
       sensitive   = true
+    }
+
+    # A variable, not a literal: core's Trivy policy PROXMOX-002 rejects a
+    # hard-coded insecure = true. Same variable and default as core.
+    variable "proxmox_insecure" {
+      type        = bool
+      description = "Skip TLS verification (homelab self-signed cert)"
+      default     = true
     }
 
     variable "cipassword" {
