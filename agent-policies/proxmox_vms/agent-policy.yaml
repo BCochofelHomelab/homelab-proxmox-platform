@@ -1,0 +1,13 @@
+# Host group: every Proxmox VM. Owner: platform team.
+name: Proxmox VMs
+description: Elastic Agent on every Proxmox VM (systemd service, baked into the Packer template).
+# The agent's own monitoring data.
+namespace: platform
+
+# Each integration writes to its owning workspace's namespace; the version
+# must match shared/fleet/fleet.yaml.
+integrations:
+  system:
+    package: system
+    version: "2.6.0"
+    namespace: platform

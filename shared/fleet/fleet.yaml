@@ -1,0 +1,24 @@
+# Shared Fleet configuration. Changing anything here affects every host.
+#
+# Integration packages and their versions: every agent policy's
+# integration must use the version installed here (scripts/check_contract.py).
+integrations:
+  system: "2.6.0"   # TODO(verify): the version installed in the cluster today
+  # auditd_manager: "1.20.0"
+  # osquery_manager: "1.18.0"
+
+# Fleet outputs, keyed by output id. TODO: move from the cluster; hosts are
+# placeholders until then.
+outputs: {}
+#  logstash:
+#    name: Logstash
+#    type: logstash
+#    hosts: ["logstash01.homelab.bcochofel.com:5044"]
+#    default_integrations: true
+
+# Fleet Server hosts, keyed by host id.
+fleet_server_hosts: {}
+#  homelab:
+#    name: Fleet Server
+#    hosts: ["https://fleet01.homelab.bcochofel.com:8220"]
+#    default: true

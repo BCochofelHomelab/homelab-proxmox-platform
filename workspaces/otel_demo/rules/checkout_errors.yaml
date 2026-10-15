@@ -1,0 +1,9 @@
+# Fires when the checkout service logs errors. Queries only this workspace's data.
+query:
+  query:
+    bool:
+      filter:
+        - match: { service.name: checkout }
+        - match: { log.level: error }
+threshold: 5
+window_minutes: 5

@@ -1,0 +1,11 @@
+---
+# Configures every platform VM. Roles move here from
+# homelab-proxmox-workloads: elasticsearch, kibana, fleet_server, logstash
+# (the Logstash role ships its pipelines). Until then, it only proves the
+# dynamic inventory reaches every host.
+- name: Platform VMs are reachable
+  hosts: platform
+  gather_facts: false
+  tasks:
+    - name: Ping
+      ansible.builtin.ping:

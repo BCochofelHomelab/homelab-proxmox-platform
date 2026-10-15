@@ -1,0 +1,7 @@
+# Workspace "otel_demo": the OpenTelemetry Astronomy Shop. Its collector
+# must write with data_stream.namespace = otel_demo.
+display_name: OTel Demo
+owner: sre
+description: OpenTelemetry Astronomy Shop running on k3s.
+data_types: [logs, metrics, traces]
+read_from: [platform]

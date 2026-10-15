@@ -1,0 +1,13 @@
+# Workspace "platform": the platform's own telemetry (Proxmox, VMs, DNS,
+# the Elastic Stack itself). The id is the folder name and is permanent:
+# it's the namespace of every data stream this workspace receives.
+display_name: Platform
+owner: sre
+description: Proxmox, VMs, DNS and the Elastic Stack itself.
+data_types: [logs, metrics]
+# access:
+#   realm: <realm name>
+#   bindings:
+#     <identity-provider group>: editor
+alerting:
+  error_threshold: 20

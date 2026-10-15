@@ -1,0 +1,11 @@
+---
+collections:
+  # The proxmox dynamic inventory plugin (inventory/proxmox.yml).
+  - name: community.proxmox
+    version: ">=1.0.0"
+  - name: ansible.utils
+    version: ">=5.0.0"
+  # Vars plugin that decrypts group_vars/*.sops.yaml at task time
+  # (ansible.cfg [community.sops] vars_stage = task), as in core.
+  - name: community.sops
+    version: ">=2.0.0"
