@@ -1,7 +1,8 @@
 # Generated into every "proxmox" stack: its VMs, through
-# homelab-proxmox-core's VM module at global.vm_module.ref, and their
-# outputs. A VM stack holds only `local.vms` (main.tf). Imported by
-# terramate.tm.hcl.
+# homelab-proxmox-core's VM module at global.vm_module.ref. A VM stack
+# holds only `local.vms` (main.tf) and its outputs (outputs.tf: never
+# generate a file another stack writes by hand, or `terramate run` refuses
+# that stack as outdated). Imported by terramate.tm.hcl.
 #
 # Every VM is tagged "platform" (the Ansible inventory keeps only those),
 # "terraform", and its Ansible groups: community.proxmox's inventory turns
@@ -37,17 +38,6 @@ generate_hcl "_terramate_generated_vms.tf" {
       ciuser     = global.ciuser
       cipassword = var.cipassword
       sshkeys    = tm_join("\n", global.sshkeys)
-    }
-  }
-}
-
-generate_hcl "outputs.tf" {
-  condition = tm_contains(terramate.stack.tags, "proxmox")
-
-  content {
-    output "vms" {
-      description = "The stack's VMs: name => VMID and IP"
-      value       = { for name, vm in module.vm : name => { vmid = vm.vmid, ip = vm.ip } }
     }
   }
 }
