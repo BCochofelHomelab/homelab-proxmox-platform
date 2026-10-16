@@ -1,0 +1,12 @@
+---
+# Host group elasticsearch (terramate/agent-policy.tm.hcl). Ansible enrolls its VMs
+# into this policy: elastic_agent_policy_id in their group_vars.
+name: Elasticsearch nodes
+description: es-01..es-03
+# The agents' own logs and metrics: the platform runs the agents.
+namespace: platform
+integrations:
+  - name: system
+    package: system
+    namespace: platform
+    description: Host logs and metrics

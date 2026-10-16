@@ -1,0 +1,23 @@
+---
+# The OpenTelemetry demo's workspace (terramate/workspace.tm.hcl): the
+# Astronomy Shop's traces, metrics and logs (its collector sets
+# data_stream.namespace = otel_demo), and the otel-demo VM's host data.
+# Owner: sre-lead. Namespace = workspace id: "otel_demo".
+display_name: OpenTelemetry demo
+description: >-
+  The Astronomy Shop (OpenTelemetry demo), through the EDOT gateway, and
+  the VM it runs on. Owner: sre-lead.
+color: "#1EA593"
+data_types: [logs, metrics, traces]
+
+access: {}
+
+connectors:
+  server_log:
+    type: .server-log
+    name: Server log
+alert_actions:
+  - connector: server_log
+    params:
+      level: warn
+      message: "[otel_demo] {{rule.name}}: {{context.reason}}{{context.message}}"

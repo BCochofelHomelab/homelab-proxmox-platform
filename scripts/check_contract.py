@@ -8,9 +8,13 @@ namespace = workspace id.
 - Every namespace data is written with names an existing workspace. A
   namespace is the value of any `namespace` key, at any depth, in
   agent-policies/*/agent-policy.yaml, and of any key named `namespace` or
-  ending in `_namespace` in ansible/inventory/group_vars/*.yml (Logstash
-  and the EDOT gateway). A value holding a Jinja expression is skipped: it
+  ending in `_namespace` in ansible/inventory/group_vars/*.yml (the OTel
+  demo's collector), and of any `namespace` or `*_namespace` set to a
+  string literal in the stacks' .tf files (shared/fleet's Fleet Server
+  policy). A value holding a Jinja or HCL expression is skipped: it
   resolves to one of the checked ones.
+- Every elastic_agent_policy_id in group_vars names a host group, a folder
+  under agent-policies/: Ansible enrolls the VMs into it.
 
 A baseline rule in the platform workspace catches whatever slips past
 this: data arriving in a namespace with no workspace.
@@ -25,6 +29,10 @@ from pathlib import Path
 import yaml
 
 WORKSPACE_ID = re.compile(r"^[a-z0-9_]{1,64}$")
+# `namespace = "x"` or `platform_namespace = "x"` in HCL, outside comments.
+HCL_NAMESPACE = re.compile(r'^\s*((?:\w+_)?namespace)\s*=\s*"([^"$]+)"', re.MULTILINE)
+# The stacks' own .tf files: generated ones read YAML that's checked above.
+TF_GLOBS = ["platform/**/*.tf", "apps/**/*.tf", "shared/**/*.tf", "agent-policies/**/*.tf", "workspaces/**/*.tf"]
 NAMESPACE_KEY = re.compile(r"^(.*_)?namespace$")
 
 
@@ -76,6 +84,20 @@ def main():
                 continue
             if namespace not in workspaces:
                 errors.append(f"{path}: {where.lstrip('.')} = {namespace!r} names no workspace (workspaces/{namespace}/)")
+
+    for pattern in TF_GLOBS:
+        for path in sorted(Path(".").glob(pattern)):
+            if ".terraform" in path.parts:
+                continue
+            for m in HCL_NAMESPACE.finditer(path.read_text(encoding="utf-8")):
+                if m.group(2) not in workspaces:
+                    errors.append(f"{path}: {m.group(1)} = {m.group(2)!r} names no workspace (workspaces/{m.group(2)}/)")
+
+    host_groups = {p.name for p in Path("agent-policies").glob("*") if p.is_dir()}
+    for path in sorted(Path("ansible/inventory/group_vars").glob("*.yml")):
+        policy = (load(path) or {}).get("elastic_agent_policy_id")
+        if isinstance(policy, str) and "{{" not in policy and policy not in host_groups:
+            errors.append(f"{path}: elastic_agent_policy_id = {policy!r} names no host group (agent-policies/{policy}/)")
 
     for error in errors:
         print(error)

@@ -1,7 +1,8 @@
 ---
 # Full provision, after the VM stacks are applied (`mise run tofu:apply`):
-# `mise run ansible:site`. Fleet Server waits for shared/fleet (40), so the
-# first run skips it; run this again after applying shared/fleet.
+# `mise run ansible:site`. Fleet Server waits for shared/fleet (40), and
+# each VM's agent for its agent-policies/<group> (50): the first run skips
+# them; run this again after applying shared/ and agent-policies/.
 - name: Bootstrap
   import_playbook: 00-bootstrap.yml
 - name: Elasticsearch
@@ -14,6 +15,8 @@
   import_playbook: 35-edot-gateway.yml
 - name: Fleet Server
   import_playbook: 40-fleet-server.yml
+- name: Elastic Agents
+  import_playbook: 50-elastic-agents.yml
 - name: OpenTelemetry Demo
   import_playbook: 60-otel-demo.yml
 - name: Health check

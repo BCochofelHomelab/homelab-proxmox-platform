@@ -9,3 +9,6 @@ es_heap_size: 4g
 
 # The 200 GB data disk (platform/elastic, scsi1) holds path.data.
 data_disk_mount_point: /var/lib/elasticsearch
+
+# The host group's Fleet agent policy: agent-policies/elasticsearch.
+elastic_agent_policy_id: elasticsearch

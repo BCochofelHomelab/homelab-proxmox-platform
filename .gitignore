@@ -39,6 +39,8 @@ secrets/
 *.crt
 # The internal CA's certificate (public; its key is ansible/pki/*.key.sops).
 !ansible/pki/elastic-ca.crt
+# The Elastic Agents' shared client certificate (its key: agent-client.key.sops).
+!ansible/pki/agent-client.crt
 *.p12
 *.pfx
 .env

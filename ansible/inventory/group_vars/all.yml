@@ -29,6 +29,9 @@ elastic_ca_key: "{{ elastic_pki_dir }}/elastic-ca.key.sops"
 # Elasticsearch ports, read by every role that talks to the cluster.
 es_http_port: 9200
 es_transport_port: 9300
+# Fleet Server, where every agent enrolls (shared/fleet).
+fleet_url: "https://{{ hostvars[groups['fleet_server'][0]].ansible_host }}:8220"
+
 # HTTPS endpoints of every Elasticsearch node.
 es_hosts: >-
   {{ groups['elasticsearch'] | map('extract', hostvars, 'ansible_host')

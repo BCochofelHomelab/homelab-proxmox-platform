@@ -16,12 +16,7 @@ otel_demo_compose_files:
 otel_demo_env_files:
   - "{{ otel_demo_dir }}/.env"
   - "{{ otel_demo_config_dir }}/env.homelab"
-# The workspace the demo's data belongs to: its data stream namespace
-# (namespace = workspace id, workspaces/otel_demo). Every signal the demo's
-# collector exports carries it as the resource attribute
-# data_stream.namespace, which the gateway's Elasticsearch exporter routes
-# by: traces-*-otel_demo, metrics-*-otel_demo, logs-*-otel_demo.
-otel_demo_namespace: otel_demo
+# otel_demo_namespace: group_vars/otel_demo.yml (the workspace's id).
 # deployment.environment.name: the Environment in Kibana's APM UI.
 otel_demo_environment: homelab
 # The web store (frontend-proxy, upstream's ENVOY_PORT).
