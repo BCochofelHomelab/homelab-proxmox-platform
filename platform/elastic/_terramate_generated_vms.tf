@@ -18,7 +18,7 @@ module "vm" {
   ]
   network_bridge = "vmbr0"
   searchdomain   = "homelab.bcochofel.com"
-  source         = "git::https://github.com/BCochofelHomelab/homelab-proxmox-core.git//terraform/modules/vm?ref=8.1.0"
+  source         = "git::https://github.com/BCochofelHomelab/homelab-proxmox-core.git//terraform/modules/vm?ref=8.1.1"
   sshkeys        = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEZGQwHOs8V9ndmLn3NuQXxuD0Ht4zaz+c6/WaEMAA6S bcochofel@NUC12WSHi7"
   tags = concat([
     "platform",
