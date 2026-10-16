@@ -7,5 +7,9 @@ creation_rules:
   # The inventory's secrets: a dry-run's ansible-playbook --check reads them.
   - path_regex: (^|/)ansible/inventory/group_vars/[^/]+\.sops\.ya?ml$
     age: age1fucsvstpr082zemctfpjn2xkwq86thvlzan4tp9fyvg2q0rnnemshw690m,age1f0qs93yyg2mxxyxhft2fdzdda3nfx5phy3h2gmzfslj2k4rpjg8qrps26r
+  # The internal CA's key: Ansible signs every host's certificate with it,
+  # in a dry-run too.
+  - path_regex: (^|/)ansible/pki/[^/]+\.sops$
+    age: age1fucsvstpr082zemctfpjn2xkwq86thvlzan4tp9fyvg2q0rnnemshw690m,age1f0qs93yyg2mxxyxhft2fdzdda3nfx5phy3h2gmzfslj2k4rpjg8qrps26r
   - path_regex: \.sops\.ya?ml$
     age: age1fucsvstpr082zemctfpjn2xkwq86thvlzan4tp9fyvg2q0rnnemshw690m

@@ -1,0 +1,25 @@
+logstash_writer_password: ENC[AES256_GCM,data:5Fc9RR3i2CzxEcucXkcSKI73U9eEJoXZrithDq18nsY=,iv:1cSAORnvzbTYfVh8aAM4IBezv/d+mjRXzSie/5zztGY=,tag:vVG0qVkLWaorZMvA+ttrwQ==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBBelIvYmlobXJWMDg4cy9z
+            ajVkOFlsT2FobjZUR2pvSmV3VTM2cGU3WVZjCnAvYm9KNUVuNWJ0Uk5YdlEyNDFo
+            N0tZYkNGZWlvbEVlbEo2ZDZUQTBLVFEKLS0tIGNnMXBtRjNGRGx1VXV3MnNYa1c5
+            UkJHSlNaT1Vlc2hTRit6bnExa1BxNkUKdYKyO6x6uEdmdoWL9g4QfBo73mQX0XCm
+            Bh0kCx7PXwWDzPO2VZmDsitCQ2HVdoZngALzvrRsK1xSBTJvlkcXvw==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age1fucsvstpr082zemctfpjn2xkwq86thvlzan4tp9fyvg2q0rnnemshw690m
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSA0TzEyemlxblRmQnZpd1Ar
+            UlRPdUNHWlRoRkFlQzdTMlJhWmhFVXJjUFY0CmQ4R2xMM3R6anNTK3J3cEZSamQ0
+            YzlpTitJSys5N09WZW81TUd0dC9GVU0KLS0tIHJvSkFpZXBDLzVaVXlVUmJBamZ6
+            UTVoRFhQNkhQbkxZd0ZzTFRYNEZaeFUKj5dRBgQruX1WU8mk7YoxVES2rlyY2fZ9
+            gjuYD1/0BV9Z3UEFfDUAE0/z/MUcDuy9agBdTymC/zUu06MdFUe22A==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age1f0qs93yyg2mxxyxhft2fdzdda3nfx5phy3h2gmzfslj2k4rpjg8qrps26r
+    lastmodified: "2026-10-16T16:33:58Z"
+    mac: ENC[AES256_GCM,data:hyFIaOatCwABrJhiMNKCmoZ+KjRfv90QJTcjqsKBUepC7ugj8gQ4n1+QkIH3qvchh/ojTK2HNZHlfyFFL2tg8NL1SsiIOsiZazuffPMCPXt/VBfJR0x2Kb9utp9vzG4uOYUYlHu/PSiPzoA97mHEPos4OxB7AKToHiJHD5cIRmg=,iv:QrXBtOsCHNoaSEDc3nguo5OmeAbD/kKPFjF1fH4tstM=,tag:a7WAi8+SUuCQfnLj+clSvA==,type:str]
+    unencrypted_suffix: _unencrypted
+    version: 3.13.3

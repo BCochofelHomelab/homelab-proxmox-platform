@@ -1,0 +1,14 @@
+# {{ ansible_managed }}
+# Loaded after upstream's compose.yaml.
+services:
+  otel-collector:
+    # The demo's collector gets this VM's client certificate for the
+    # gateway's mTLS (read as root, the container's user).
+    volumes:
+      - {{ otel_demo_certs_dir }}:/etc/otelcol-certs:ro
+    # Read by upstream's resource_detection processor (its `env` detector,
+    # override on), first in every pipeline: every resource, from the SDKs
+    # and from the collector's own receivers, gets the workspace's
+    # namespace before it's exported.
+    environment:
+      - OTEL_RESOURCE_ATTRIBUTES=data_stream.namespace={{ otel_demo_namespace }}

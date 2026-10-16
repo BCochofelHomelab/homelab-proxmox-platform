@@ -10,10 +10,14 @@
 # `mise run ansible:site` passes to this one command. The user and token id
 # are set here, so another PROXMOX_* in the environment can't stand in.
 plugin: community.proxmox.proxmox
-url: https://192.168.68.20:8006
+# Through homelab-proxmox-core's Caddy, whose Let's Encrypt certificate for
+# pve1 verifies: pve1.homelab.bcochofel.com resolves to Caddy, as every name
+# Caddy serves does (core). Proxmox's own :8006 by IP would need
+# validate_certs: false.
+url: https://pve1.homelab.bcochofel.com
 user: inventory@pve
 token_id: ansible
-validate_certs: false # Proxmox's self-signed certificate
+validate_certs: true
 
 exclude_nodes: true # pve1 itself isn't managed here
 want_proxmox_nodes_ansible_host: false
@@ -28,6 +32,14 @@ filters:
 # known before the guest agent answers.
 compose:
   ansible_host: (proxmox_ipconfig0.ip | default('')).split('/') | first
+
+# Every Elastic VM (platform/elastic): group_vars/elastic.sops.yaml holds
+# the secret they share, elastic's password.
+groups:
+  elastic: >-
+    proxmox_tags_parsed | default([])
+    | intersect(['elasticsearch', 'kibana_server', 'fleet_server', 'logstash', 'edot_gateway'])
+    | length > 0
 
 keyed_groups:
   - key: proxmox_tags_parsed | difference(['platform', 'terraform'])

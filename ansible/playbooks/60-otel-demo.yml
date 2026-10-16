@@ -1,0 +1,11 @@
+---
+# After the EDOT gateway (35), the demo's backend. Docker and its Compose
+# plugin come with homelab-proxmox-core's template; the kernel's IPv6 comes
+# back on (some demo containers listen on [::], and the template boots with
+# ipv6.disable=1).
+- name: OpenTelemetry Demo
+  hosts: otel_demo
+  gather_facts: true
+  roles:
+    - kernel_ipv6
+    - otel_demo

@@ -8,6 +8,14 @@ collections:
   # (ansible.cfg [community.sops] vars_stage = task).
   - name: community.sops
     version: ">=2.0.0"
+  # The internal CA (roles/elastic_pki): keys, CSRs, signing.
+  - name: community.crypto
+    version: ">=3.0.0"
+  # data_disk: filesystem; kernel_ipv6: sysctl, and data_disk: mount.
+  - name: community.general
+    version: ">=11.0.0"
+  - name: ansible.posix
+    version: ">=2.0.0"
   # The dynamic inventory (inventory/platform.proxmox.yml): Proxmox's VMs,
   # grouped by tag. Needs requests in .venv (requirements.txt).
   - name: community.proxmox

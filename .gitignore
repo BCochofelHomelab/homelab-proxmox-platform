@@ -37,8 +37,8 @@ secrets/
 *.pem
 *.cert
 *.crt
-# Public CA certificates Caddy trusts for HTTPS backends (caddy_trusted_cas).
-!ansible/files/trust/*.crt
+# The internal CA's certificate (public; its key is ansible/pki/*.key.sops).
+!ansible/pki/elastic-ca.crt
 *.p12
 *.pfx
 .env

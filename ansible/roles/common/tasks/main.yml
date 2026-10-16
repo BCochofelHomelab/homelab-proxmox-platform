@@ -1,0 +1,19 @@
+---
+# Preflight checks for a VM cloned from homelab-proxmox-core's template
+# (ubuntu-26.04-core). This role never changes the host.
+
+# A VM just created by `tofu apply` may still be running cloud-init.
+- name: Wait for SSH
+  ansible.builtin.wait_for_connection:
+    timeout: 300
+
+- name: Gather facts
+  ansible.builtin.setup:
+
+- name: Check distribution compatibility
+  ansible.builtin.assert:
+    that:
+      - ansible_facts['distribution'] == 'Ubuntu'
+      - ansible_facts['distribution_version'] is version('24.04', '>=')
+    fail_msg: "{{ ansible_facts['distribution'] }} {{ ansible_facts['distribution_version'] }} isn't supported (Ubuntu 24.04 or later)."
+    quiet: true

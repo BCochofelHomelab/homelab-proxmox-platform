@@ -1,16 +1,20 @@
 ---
-# Full provision, after the VM stacks are applied (`mise run tofu:apply`).
-# The roles come with their plays; until then this proves the inventory
-# and SSH: every platform VM, grouped by its Proxmox tags, answers.
-
-- name: Reachable
-  hosts: all
-  gather_facts: false
-  tasks:
-    - name: Wait for SSH (a fresh VM is still running cloud-init)
-      ansible.builtin.wait_for_connection:
-        timeout: 300
-
-    - name: Show each VM's groups
-      ansible.builtin.debug:
-        msg: "{{ inventory_hostname }} ({{ ansible_host }}): {{ group_names | sort | join(', ') }}"
+# Full provision, after the VM stacks are applied (`mise run tofu:apply`):
+# `mise run ansible:site`. Fleet Server waits for shared/fleet (40), so the
+# first run skips it; run this again after applying shared/fleet.
+- name: Bootstrap
+  import_playbook: 00-bootstrap.yml
+- name: Elasticsearch
+  import_playbook: 10-elasticsearch.yml
+- name: Kibana
+  import_playbook: 20-kibana.yml
+- name: Logstash
+  import_playbook: 30-logstash.yml
+- name: EDOT Collector gateway
+  import_playbook: 35-edot-gateway.yml
+- name: Fleet Server
+  import_playbook: 40-fleet-server.yml
+- name: OpenTelemetry Demo
+  import_playbook: 60-otel-demo.yml
+- name: Health check
+  import_playbook: 99-healthcheck.yml
