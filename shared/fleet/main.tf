@@ -47,26 +47,40 @@ data "sops_file" "agent_client_key" {
 
 # -- Integration packages (global.fleet_packages, terramate.tm.hcl) ---------------
 
-resource "elasticstack_fleet_integration" "fleet_server" {
-  name         = "fleet_server"
-  version      = local.fleet_packages.fleet_server
-  skip_destroy = true
-}
-
-resource "elasticstack_fleet_integration" "system" {
-  name         = "system"
-  version      = local.fleet_packages.system
-  skip_destroy = true
-}
-
-# Stack monitoring: Elasticsearch (agent-policies/elasticsearch), Kibana
-# (below), Logstash (agent-policies/ingest).
-resource "elasticstack_fleet_integration" "monitoring" {
-  for_each = toset(["elasticsearch", "kibana", "logstash"])
+# Every package the platform uses, at its one version: agent policies'
+# integrations (agent-policies/*) and Fleet Server's (below) pick them by
+# name. Adding a package is one line in the global.
+resource "elasticstack_fleet_integration" "packages" {
+  for_each = local.fleet_packages
 
   name         = each.key
-  version      = local.fleet_packages[each.key]
+  version      = each.value
   skip_destroy = true
+}
+
+moved {
+  from = elasticstack_fleet_integration.fleet_server
+  to   = elasticstack_fleet_integration.packages["fleet_server"]
+}
+
+moved {
+  from = elasticstack_fleet_integration.system
+  to   = elasticstack_fleet_integration.packages["system"]
+}
+
+moved {
+  from = elasticstack_fleet_integration.monitoring["elasticsearch"]
+  to   = elasticstack_fleet_integration.packages["elasticsearch"]
+}
+
+moved {
+  from = elasticstack_fleet_integration.monitoring["kibana"]
+  to   = elasticstack_fleet_integration.packages["kibana"]
+}
+
+moved {
+  from = elasticstack_fleet_integration.monitoring["logstash"]
+  to   = elasticstack_fleet_integration.packages["logstash"]
 }
 
 # -- Fleet Server -------------------------------------------------------------------
@@ -151,8 +165,8 @@ resource "elasticstack_fleet_integration_policy" "fleet_server" {
   namespace           = local.platform_namespace
   description         = "Fleet Server, port 8220"
   agent_policy_id     = elasticstack_fleet_agent_policy.fleet_server.policy_id
-  integration_name    = elasticstack_fleet_integration.fleet_server.name
-  integration_version = elasticstack_fleet_integration.fleet_server.version
+  integration_name    = elasticstack_fleet_integration.packages["fleet_server"].name
+  integration_version = elasticstack_fleet_integration.packages["fleet_server"].version
 }
 
 resource "elasticstack_fleet_integration_policy" "fleet_server_system" {
@@ -160,8 +174,8 @@ resource "elasticstack_fleet_integration_policy" "fleet_server_system" {
   namespace           = local.platform_namespace
   description         = "Host logs and metrics of the kibana VM"
   agent_policy_id     = elasticstack_fleet_agent_policy.fleet_server.policy_id
-  integration_name    = elasticstack_fleet_integration.system.name
-  integration_version = elasticstack_fleet_integration.system.version
+  integration_name    = elasticstack_fleet_integration.packages["system"].name
+  integration_version = elasticstack_fleet_integration.packages["system"].version
 }
 
 # Kibana's stack monitoring and logs: the kibana VM is Fleet Server's host.
@@ -181,8 +195,8 @@ resource "elasticstack_fleet_integration_policy" "fleet_server_kibana" {
   namespace           = local.platform_namespace
   description         = "Stack monitoring and logs of Kibana"
   agent_policy_id     = elasticstack_fleet_agent_policy.fleet_server.policy_id
-  integration_name    = elasticstack_fleet_integration.monitoring["kibana"].name
-  integration_version = elasticstack_fleet_integration.monitoring["kibana"].version
+  integration_name    = elasticstack_fleet_integration.packages["kibana"].name
+  integration_version = elasticstack_fleet_integration.packages["kibana"].version
 
   inputs = {
     "kibana-kibana/metrics" = { enabled = true, vars = local.kibana_monitoring_vars }
