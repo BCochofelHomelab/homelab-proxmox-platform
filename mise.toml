@@ -292,14 +292,20 @@ run = "sops exec-env ~/.secrets/homelab.yaml 'terramate run -- tofu apply tfplan
 # (PROXMOX_TOKEN_SECRET) comes from homelab.yaml; Ansible decrypts its own
 # group_vars/*.sops.yaml with your key at task time. Extra arguments go to
 # ansible-playbook (mise run ansible:site -- --limit elasticsearch --check):
-# mise appends them to the last line, the call to `site`.
+# mise appends them to the last line, the call to `site`, which quotes each
+# one with %q. Only when there are some: `printf '%q '` with no arguments
+# still prints '', an empty playbook name.
 [tasks."ansible:site"]
 description = "Configure every platform VM (playbooks/site.yml): the inventory token from ~/.secrets/homelab.yaml, the inventory secrets with your key. Extra args after --"
 dir = "{{config_root}}/ansible"
 env = { SOPS_AGE_KEY_FILE = "{{env.HOME}}/.config/sops/age/bcochofel.txt", ANSIBLE_SOPS_AGE_KEYFILE = "{{env.HOME}}/.config/sops/age/bcochofel.txt" }
 shell = "bash -c"
 run = '''
-site() { exec sops exec-env ~/.secrets/homelab.yaml "ansible-playbook playbooks/site.yml $(printf '%q ' "$@")"; }; site'''
+site() {
+  args=""
+  [ $# -eq 0 ] || args=$(printf ' %q' "$@")
+  exec sops exec-env ~/.secrets/homelab.yaml "ansible-playbook playbooks/site.yml$args"
+}; site'''
 
 [tasks.sops]
 description = "Run sops with your key, from the current directory: mise run sops -- <file> | updatekeys <file>"

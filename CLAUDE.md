@@ -62,7 +62,12 @@ token is `inventory@pve!ansible` (role `AnsibleInventory`); user and token
 id are in the file, only `PROXMOX_TOKEN_SECRET` comes from `homelab.yaml`.
 Without it (the agent), the inventory is empty: `--syntax-check` still
 works. `tofu:*` are `terramate run` from `{{cwd}}`; `ansible:site` passes
-extra args through `printf %q` inside the `sops exec-env` command.
+extra args through `printf %q` inside the `sops exec-env` command, only
+when there are some (`printf '%q '` with none prints `''`).
+
+Releases: semantic-release as core's (`.releaserc.js`, `package.json`,
+`package-lock.json` copied from core; `release.yml` is the human's to
+commit), tags `X.Y.Z` with no `v`, first release `1.0.0`.
 
 ## Decisions that are deliberate (do not "fix" these)
 
