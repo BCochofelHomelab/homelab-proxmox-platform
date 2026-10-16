@@ -1,6 +1,6 @@
 ---
 # The same hooks as homelab-proxmox-core, minus Packer (the VM template is
-# core's). Terramate's checks come with its configuration.
+# core's), plus Terramate's and the workspace contract's.
 repos:
   # General file checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -116,6 +116,35 @@ repos:
         language: pygrep
         entry: 'check_mode:\s*false(?!\s*#\s*read-only:)'
         files: ^ansible/.*\.ya?ml$
+
+      # Terramate: *.tm.hcl formatted, and every stack's generated code
+      # (terramate/*.tm.hcl) up to date with its config. Both rewrite the
+      # files and fail; stage the result. `generate` also fails a stack
+      # that isn't tagged exactly one of "proxmox" or "elastic".
+      - id: terramate_fmt
+        name: terramate fmt
+        language: system
+        entry: terramate fmt --detailed-exit-code
+        files: \.tm\.hcl$
+        pass_filenames: false
+      - id: terramate_generate
+        name: terramate generate is up to date
+        language: system
+        entry: terramate generate --detailed-exit-code
+        always_run: true
+        pass_filenames: false
+
+      # The contract with terraform-elasticstack-workspace: workspace ids
+      # match ^[a-z0-9_]{1,64}$ and aren't "default", and every namespace
+      # data is written with names a workspace. PyYAML at ansible-core's
+      # version in .venv.
+      - id: contract
+        name: workspace ids and namespaces
+        language: python
+        entry: python scripts/check_contract.py
+        additional_dependencies: ["pyyaml==6.0.3"]
+        files: ^(workspaces/|agent-policies/|ansible/inventory/group_vars/|scripts/check_contract\.py$)
+        pass_filenames: false
 
   # OpenTofu formatting, validation, docs, linting and policy, run with
   # `tofu`, on every stack.
