@@ -1,0 +1,262 @@
+---
+# Checked from the controller, as any client would: TLS verified against
+# the internal CA, authenticated as elastic.
+- name: Elasticsearch health check
+  hosts: elasticsearch
+  gather_facts: false
+  tasks:
+    - name: Check every node answers over verified TLS
+      ansible.builtin.uri:
+        url: "https://{{ ansible_host }}:{{ es_http_port }}/"
+        ca_path: "{{ elastic_ca_cert }}"
+        url_username: elastic
+        url_password: "{{ elastic_password }}"
+        force_basic_auth: true
+      delegate_to: localhost
+      become: false
+      register: _es_root
+      check_mode: false # read-only: GET the node's root
+
+    - name: Check every node runs {{ elastic_version }}
+      ansible.builtin.assert:
+        that: _es_root.json.version.number == elastic_version
+        fail_msg: "{{ inventory_hostname }} runs {{ _es_root.json.version.number }}, expected {{ elastic_version }}."
+        quiet: true
+
+    - name: Wait for the cluster to be green with every node
+      ansible.builtin.uri:
+        url: "https://{{ ansible_host }}:{{ es_http_port }}/_cluster/health"
+        ca_path: "{{ elastic_ca_cert }}"
+        url_username: elastic
+        url_password: "{{ elastic_password }}"
+        force_basic_auth: true
+      delegate_to: localhost
+      become: false
+      register: _es_health
+      check_mode: false # read-only: GET _cluster/health
+      # Waits: right after formation the cluster is briefly yellow while
+      # the system indices' replicas are allocated.
+      until: >-
+        _es_health.status == 200 and _es_health.json.status == 'green'
+        and _es_health.json.number_of_nodes == groups['elasticsearch'] | length
+      retries: 30
+      delay: 10
+      run_once: true
+
+    - name: Show the cluster's health
+      ansible.builtin.debug:
+        msg: >-
+          {{ _es_health.json.cluster_name }}: {{ _es_health.json.status }},
+          {{ _es_health.json.number_of_nodes }} nodes,
+          {{ _es_health.json.active_shards }} active shards
+      run_once: true
+
+- name: Kibana health check
+  hosts: kibana_server
+  gather_facts: false
+  tasks:
+    - name: Wait for Kibana to be available over verified TLS
+      ansible.builtin.uri:
+        url: "https://{{ ansible_host }}:5601/api/status"
+        ca_path: "{{ elastic_ca_cert }}"
+        url_username: elastic
+        url_password: "{{ elastic_password }}"
+        force_basic_auth: true
+        status_code: [200, 503]
+      delegate_to: localhost
+      become: false
+      register: _kibana_status
+      check_mode: false # read-only: GET Kibana's status
+      until: >-
+        _kibana_status.status == 200
+        and _kibana_status.json.status.overall.level == 'available'
+      retries: 30
+      delay: 10
+
+    - name: Check Kibana runs {{ elastic_version }}
+      ansible.builtin.assert:
+        that: _kibana_status.json.version.number == elastic_version
+        fail_msg: "Kibana runs {{ _kibana_status.json.version.number }}, expected {{ elastic_version }}."
+        quiet: true
+
+    # Through core's Caddy (homelab-proxmox-core): an external dependency,
+    # so reported without failing the playbook.
+    - name: Check Kibana answers at {{ kibana_public_url }} (through core's Caddy)
+      ansible.builtin.uri:
+        url: "{{ kibana_public_url }}/api/status"
+        url_username: elastic
+        url_password: "{{ elastic_password }}"
+        force_basic_auth: true
+      delegate_to: localhost
+      become: false
+      register: _kibana_public
+      check_mode: false # read-only: GET Kibana's status through Caddy
+      ignore_errors: true
+
+- name: Logstash health check
+  hosts: logstash
+  gather_facts: false
+  tasks:
+    - name: Check the Elastic Agent pipeline is running
+      ansible.builtin.uri:
+        url: http://127.0.0.1:9600/_node/pipelines/elastic-agent
+      become: true
+      register: _logstash_pipeline
+      check_mode: false # read-only: GET Logstash's pipeline stats
+      failed_when: >-
+        _logstash_pipeline.status != 200
+        or 'elastic-agent' not in (_logstash_pipeline.json.pipelines | default({}))
+
+    - name: Check Logstash runs {{ elastic_version }}
+      ansible.builtin.assert:
+        that: _logstash_pipeline.json.version == elastic_version
+        fail_msg: "Logstash runs {{ _logstash_pipeline.json.version }}, expected {{ elastic_version }}."
+        quiet: true
+
+    # From the controller, like an agent: the port answers and presents a
+    # certificate that verifies against the internal CA.
+    - name: Check the agent port presents a certificate from the internal CA
+      ansible.builtin.command:
+        argv:
+          - openssl
+          - s_client
+          - -connect
+          - "{{ ansible_host }}:5044"
+          - -CAfile
+          - "{{ elastic_ca_cert }}"
+          - -verify_return_error
+          - -brief
+        stdin: ""
+      delegate_to: localhost
+      become: false
+      register: _logstash_tls
+      check_mode: false # read-only: a TLS handshake, nothing sent
+      changed_when: false
+      failed_when: "'Verification: OK' not in _logstash_tls.stderr"
+
+- name: EDOT Collector gateway health check
+  hosts: edot_gateway
+  gather_facts: false
+  # The role's paths and ports, from their one definition.
+  vars_files:
+    - ../roles/edot_gateway/defaults/main.yml
+  tasks:
+    - name: Check the collector reports healthy
+      ansible.builtin.uri:
+        url: http://127.0.0.1:{{ edot_health_port }}/
+      become: true
+
+    - name: Read the collector's version
+      ansible.builtin.command:
+        argv: ["{{ edot_base_dir }}/current/elastic-agent", version, --binary-only]
+      become: true
+      register: _edot_version
+      check_mode: false # read-only: prints the collector's version
+      changed_when: false
+
+    - name: Check the collector runs {{ edot_version }}
+      ansible.builtin.assert:
+        that: (edot_version ~ ' ') in _edot_version.stdout
+        fail_msg: "The EDOT Collector runs {{ _edot_version.stdout }}, expected {{ edot_version }}."
+        quiet: true
+
+    # An empty OTLP export, from the gateway's own host with its own
+    # certificate (CA-signed, clientAuth): accepted.
+    - name: Check OTLP/HTTP accepts a sender with a CA-signed certificate
+      ansible.builtin.uri:
+        url: https://{{ ansible_host }}:{{ edot_http_port }}/v1/traces
+        method: POST
+        body_format: json
+        body: {}
+        ca_path: "{{ edot_certs_dir }}/ca.crt"
+        client_cert: "{{ edot_certs_dir }}/node.crt"
+        client_key: "{{ edot_certs_dir }}/node.key"
+      become: true
+
+    # The same export from the controller, without a client certificate:
+    # refused during the TLS handshake (uri reports status -1).
+    - name: Check OTLP/HTTP refuses a sender without a certificate
+      ansible.builtin.uri:
+        url: https://{{ ansible_host }}:{{ edot_http_port }}/v1/traces
+        method: POST
+        body_format: json
+        body: {}
+        ca_path: "{{ elastic_ca_cert }}"
+      delegate_to: localhost
+      become: false
+      register: _edot_no_cert
+      failed_when: _edot_no_cert.status != -1
+
+- name: OpenTelemetry Demo health check
+  hosts: otel_demo
+  gather_facts: false
+  vars_files:
+    - ../roles/otel_demo/defaults/main.yml
+  tasks:
+    - name: Check the web store answers on {{ otel_demo_frontend_port }}
+      ansible.builtin.uri:
+        url: http://{{ ansible_host }}:{{ otel_demo_frontend_port }}/
+      delegate_to: localhost
+      become: false
+
+    # End to end: the demo's collector -> the gateway (mTLS) -> Elasticsearch,
+    # in the otel_demo workspace's namespace (traces-*-otel_demo).
+    # Upstream's load generator places orders continuously. This VM holds no
+    # Elastic secret: elastic's password is an Elastic VM's.
+    - name: Wait for the demo's traces to arrive in Elasticsearch
+      ansible.builtin.uri:
+        url: "{{ es_hosts | first }}/traces-*-{{ otel_demo_namespace }}/_count"
+        method: POST
+        body_format: json
+        body:
+          query:
+            bool:
+              filter:
+                - range: {"@timestamp": {gte: now-10m}}
+                - term: {"resource.attributes.service.namespace": opentelemetry-demo}
+        ca_path: "{{ elastic_ca_cert }}"
+        url_username: elastic
+        url_password: "{{ hostvars[groups['elastic'][0]].elastic_password }}"
+        force_basic_auth: true
+      delegate_to: localhost
+      become: false
+      register: _otel_demo_traces
+      check_mode: false # read-only: a _count search
+      until: _otel_demo_traces.json.count | default(0) > 0
+      retries: 30
+      delay: 10
+
+- name: Fleet Server health check
+  hosts: fleet_server
+  gather_facts: false
+  vars_files:
+    - ../roles/fleet_server/defaults/main.yml
+  tasks:
+    - name: Check whether the Fleet Server policy exists (shared/fleet)
+      ansible.builtin.uri:
+        url: "{{ fleet_server_kibana_url }}/api/fleet/agent_policies/{{ fleet_server_policy_id }}"
+        ca_path: "{{ elastic_ca_cert }}"
+        url_username: elastic
+        url_password: "{{ elastic_password }}"
+        force_basic_auth: true
+        status_code: [200, 404]
+      delegate_to: localhost
+      become: false
+      register: _fleet_policy
+      check_mode: false # read-only: GET the agent policy
+
+    - name: Check Fleet Server is healthy over verified TLS
+      ansible.builtin.uri:
+        url: "https://{{ ansible_host }}:{{ fleet_server_port }}/api/status"
+        ca_path: "{{ elastic_ca_cert }}"
+      delegate_to: localhost
+      become: false
+      register: _fleet_status
+      check_mode: false # read-only: GET Fleet Server's status
+      failed_when: _fleet_status.json.status | default('') != 'HEALTHY'
+      when: _fleet_policy.status == 200
+
+    - name: Report Fleet Server as waiting for shared/fleet
+      ansible.builtin.debug:
+        msg: Fleet Server isn't set up yet; it follows shared/fleet (roles/fleet_server).
+      when: _fleet_policy.status == 404

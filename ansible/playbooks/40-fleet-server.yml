@@ -1,0 +1,9 @@
+---
+# Skipped, with a message, until shared/fleet has created the Fleet Server
+# policy: run site.yml again after applying it (roles/fleet_server).
+- name: Fleet Server
+  hosts: fleet_server
+  gather_facts: false
+  roles:
+    - elastic_repo
+    - fleet_server

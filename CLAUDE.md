@@ -65,6 +65,28 @@ works. `tofu:*` are `terramate run` from `{{cwd}}`; `ansible:site` passes
 extra args through `printf %q` inside the `sops exec-env` command, only
 when there are some (`printf '%q '` with none prints `''`).
 
+Ansible (`ansible/`): DEBs for Elasticsearch, Kibana, Logstash; Elastic
+Agent tarball (signature + SHA-512) for Fleet Server (servers flavor, the
+template has no agent) and the EDOT gateway (`elastic-agent otel`); Docker
+Compose only for the OTel demo (Docker is in core's template, on every
+VM). Internal CA: `ansible/pki/elastic-ca.crt` + `elastic-ca.key.sops`
+(human + `ci` keys), from `mise run pki:init` (denied to the agent);
+`elastic_pki` signs CSRs on the controller. Secrets per group:
+`elastic.sops.yaml` (`elastic_password`; `elastic` is a composed group of
+every Elastic VM, in the inventory file), `kibana_server.sops.yaml`
+(`kibana_system_password`, `kibana_encryption_key`), `logstash.sops.yaml`
+(`logstash_writer_password`), `edot_gateway.sops.yaml`
+(`edot_writer_password`). Fleet Server ends its host's play (`meta:
+end_host`, with a message) until `shared/fleet` has created
+`fleet-server-policy`. The demo's namespace: `OTEL_RESOURCE_ATTRIBUTES=
+data_stream.namespace=otel_demo` on its collector container (upstream's
+`resource_detection` env detector, first in every pipeline); it's in the
+role's defaults, not group_vars, until `workspaces/otel_demo` exists for
+the contract check. The inventory reaches Proxmox through core's Caddy
+(`https://pve1.homelab.bcochofel.com`, Let's Encrypt, verified).
+Agents on the other VMs, `remote_monitoring_user` and the agents' client
+certificate for Logstash come with `agent-policies/` (PR 10).
+
 Releases: semantic-release as core's (`.releaserc.js`, `package.json`,
 `package-lock.json` copied from core; `release.yml` is the human's to
 commit), tags `X.Y.Z` with no `v`, first release `1.0.0`.

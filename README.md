@@ -50,8 +50,8 @@ Ansible, in [`ansible/`](ansible/), configures the VMs between the two.
 
 ## Status
 
-This repository is being set up: the VM stacks and Ansible's inventory
-are in; the playbooks' roles and the Elastic content come next.
+This repository is being set up: the VMs and Ansible's roles are in; the
+Elastic content (`shared/`, `agent-policies/`, `workspaces/`) comes next.
 
 ## Getting started
 
@@ -76,6 +76,15 @@ mise run ansible:site        # every platform VM; extra args after --
 repo root, all of them; from `platform/elastic`, that one. Ansible finds
 the VMs in Proxmox by tag (`ansible/inventory/platform.proxmox.yml`), with
 its own read-only token.
+
+What runs where: Elasticsearch, Kibana and Logstash from Elastic's DEB
+packages; Fleet Server and the EDOT Collector gateway from Elastic's
+signed Elastic Agent tarball; the OpenTelemetry demo in Docker Compose.
+TLS inside the stack comes from an internal CA (`mise run pki:init`,
+once). Ansible's secrets are in `ansible/inventory/group_vars/<group>.sops.yaml`,
+one file per group that needs them. Fleet Server follows `shared/fleet`:
+the first `ansible:site` skips it, the one after applying `shared/fleet`
+sets it up.
 
 How a change flows, and the rules it follows:
 [`CONTRIBUTING.md`](CONTRIBUTING.md).
