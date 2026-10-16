@@ -15,7 +15,10 @@ generate_hcl "_terramate_generated_backend.tf" {
       required_version = global.opentofu_version
 
       tm_dynamic "required_providers" {
-        attributes = tm_contains(terramate.stack.tags, "proxmox") ? global.providers.proxmox : global.providers.elastic
+        attributes = tm_merge(
+          tm_contains(terramate.stack.tags, "proxmox") ? global.providers.proxmox : global.providers.elastic,
+          global.extra_providers,
+        )
       }
 
       # OpenTofu has no default hostname for the cloud backend.

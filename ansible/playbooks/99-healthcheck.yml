@@ -132,6 +132,11 @@
       register: _logstash_tls
       check_mode: false # read-only: a TLS handshake, nothing sent
       changed_when: false
+      # A Logstash restart earlier in the run closes the port for a few
+      # seconds.
+      until: "'Verification: OK' in _logstash_tls.stderr"
+      retries: 12
+      delay: 5
       failed_when: "'Verification: OK' not in _logstash_tls.stderr"
 
 - name: EDOT Collector gateway health check
@@ -226,37 +231,55 @@
       retries: 30
       delay: 10
 
-- name: Fleet Server health check
-  hosts: fleet_server
+# From Fleet's side, as Kibana shows it: each host's agent is online in its
+# policy, Fleet Server's included (every agent enrolled through it over TLS
+# verified against the internal CA). An agent whose policy doesn't exist yet (shared/fleet for Fleet
+# Server, agent-policies/<group> for the rest) is reported as waiting.
+# Retries: a newly enrolled agent is reported unhealthy until its first
+# check-ins settle (the output's health among them).
+- name: Elastic Agents health check
+  hosts: all
   gather_facts: false
-  vars_files:
-    - ../roles/fleet_server/defaults/main.yml
+  vars:
+    _policy_id: >-
+      {{ fleet_server_policy_id if 'fleet_server' in group_names else elastic_agent_policy_id }}
+    _kibana_url: "https://{{ hostvars[groups['kibana_server'][0]].ansible_host }}:5601"
+    _api_password: "{{ hostvars[groups['elastic'][0]].elastic_password }}"
   tasks:
-    - name: Check whether the Fleet Server policy exists (shared/fleet)
+    - name: Check whether this host's agent policy exists
       ansible.builtin.uri:
-        url: "{{ fleet_server_kibana_url }}/api/fleet/agent_policies/{{ fleet_server_policy_id }}"
+        url: "{{ _kibana_url }}/api/fleet/agent_policies/{{ _policy_id }}"
         ca_path: "{{ elastic_ca_cert }}"
         url_username: elastic
-        url_password: "{{ elastic_password }}"
+        url_password: "{{ _api_password }}"
         force_basic_auth: true
         status_code: [200, 404]
       delegate_to: localhost
       become: false
-      register: _fleet_policy
+      register: _agent_policy
       check_mode: false # read-only: GET the agent policy
 
-    - name: Check Fleet Server is healthy over verified TLS
+    - name: Report the agent as waiting for its policy
+      ansible.builtin.debug:
+        msg: "Agent policy {{ _policy_id }} doesn't exist yet: this host's agent follows it."
+      when: _agent_policy.status == 404
+
+    - name: Wait for this host's agent to be online (healthy) in Fleet
       ansible.builtin.uri:
-        url: "https://{{ ansible_host }}:{{ fleet_server_port }}/api/status"
+        url: >-
+          {{ _kibana_url }}/api/fleet/agents?perPage=10&kuery={{
+          ('local_metadata.host.hostname:"' ~ inventory_hostname ~ '" and policy_id:"' ~ _policy_id ~ '"') | urlencode }}
         ca_path: "{{ elastic_ca_cert }}"
+        url_username: elastic
+        url_password: "{{ _api_password }}"
+        force_basic_auth: true
       delegate_to: localhost
       become: false
-      register: _fleet_status
-      check_mode: false # read-only: GET Fleet Server's status
-      failed_when: _fleet_status.json.status | default('') != 'HEALTHY'
-      when: _fleet_policy.status == 200
-
-    - name: Report Fleet Server as waiting for shared/fleet
-      ansible.builtin.debug:
-        msg: Fleet Server isn't set up yet; it follows shared/fleet (roles/fleet_server).
-      when: _fleet_policy.status == 404
+      register: _fleet_agent
+      check_mode: false # read-only: GET Fleet's agents
+      until: >-
+        _fleet_agent.status == 200
+        and (_fleet_agent.json['items'] | selectattr('status', 'equalto', 'online') | list | length) > 0
+      retries: 30
+      delay: 10
+      when: _agent_policy.status == 200

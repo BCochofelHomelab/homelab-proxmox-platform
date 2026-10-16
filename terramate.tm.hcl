@@ -58,6 +58,20 @@ globals {
     }
   }
 
+  # Providers a single stack adds to its tag's (shared/fleet: sops, for the
+  # agents' client key), set in that stack's stack.tm.hcl.
+  extra_providers = {}
+
+  # Fleet integration packages, one version each for the whole platform:
+  # shared/fleet installs them, every agent policy's integrations use them
+  # (terramate/fleet.tm.hcl). Bumping one changes every stack that uses it,
+  # which is the change's scope. Versions compatible with Kibana 9.5.4 (the
+  # package registry, kibana.version=9.5.4).
+  fleet_packages = {
+    fleet_server = "1.6.1"
+    system       = "3.0.0"
+  }
+
   proxmox = {
     endpoint = "https://192.168.68.20:8006/"
     insecure = true # self-signed certificate

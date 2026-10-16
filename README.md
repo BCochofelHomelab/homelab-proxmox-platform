@@ -50,9 +50,29 @@ Ansible, in [`ansible/`](ansible/), configures the VMs between the two.
 
 ## Status
 
-This repository is being set up: the VMs, Ansible's roles and the shared
-Elastic content (`shared/`) are in; host groups' agent policies
-(`agent-policies/`) and the workspaces (`workspaces/`) come next.
+Everything is in: the VMs, Ansible's roles, the shared Elastic content
+(`shared/`), the host groups' agent policies (`agent-policies/`) and the
+workspaces (`workspaces/`): `platform` and `otel_demo`.
+
+## Adding a workspace or a host group
+
+Folders hold data; Terramate generates the code (`terramate/`).
+
+- **A workspace:** `workspaces/<id>/` with a `stack.tm.hcl` (copy one),
+  a `workspace.yaml` (the module's inputs; `module_ref` pins its release
+  for this workspace), optional `dashboards/*.ndjson` (Kibana exports) and
+  `rules/*.yaml`, and the comment-only `main.tf` and `outputs.tf` the
+  others have. The id is the folder's name: `^[a-z0-9_]{1,64}$`, never
+  `default`, and it's the namespace every source of its data must write
+  to.
+- **A host group:** `agent-policies/<group>/` with a `stack.tm.hcl`, an
+  `agent-policy.yaml` (the policy, its integrations, each with the
+  workspace its data belongs to) and the same two `.tf` files; then
+  `elastic_agent_policy_id: <group>` in the group_vars of the VMs that
+  join it.
+
+`terramate generate`, then `mise run lint`: the contract check fails a
+namespace or a policy id that names nothing.
 
 ## Getting started
 
@@ -83,9 +103,10 @@ packages; Fleet Server and the EDOT Collector gateway from Elastic's
 signed Elastic Agent tarball; the OpenTelemetry demo in Docker Compose.
 TLS inside the stack comes from an internal CA (`mise run pki:init`,
 once). Ansible's secrets are in `ansible/inventory/group_vars/<group>.sops.yaml`,
-one file per group that needs them. Fleet Server follows `shared/fleet`:
-the first `ansible:site` skips it, the one after applying `shared/fleet`
-sets it up.
+one file per group that needs them. Fleet Server follows `shared/fleet`, and each
+VM's Elastic Agent its host group's `agent-policies/<group>`: an
+`ansible:site` before those exist skips them with a message, the one after
+sets them up.
 
 How a change flows, and the rules it follows:
 [`CONTRIBUTING.md`](CONTRIBUTING.md).

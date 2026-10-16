@@ -4,39 +4,52 @@
 # and Fleet Server's own agent policy. Host groups' agent policies are
 # agent-policies/<group>/'s.
 #
-#   Fleet Server (kibana:8220) ──> Elasticsearch    default output (for now)
+#   agents ──mTLS──> Logstash (ingest:5044) ──> Elasticsearch   default output
+#   Fleet Server (kibana:8220) ─────────────> Elasticsearch     its own policy
 #
-# Fleet Server only works with an Elasticsearch output. The Logstash output
-# (agents ──mTLS──> ingest:5044) comes with the first host group's agent
-# policy, made the default only after Fleet Server's policy has its
-# integration: the Basic licence has no per-policy outputs.
+# Fleet Server only works with an Elasticsearch output, and the Basic
+# licence has no per-policy outputs. So the order matters: Fleet Server's
+# policy has its integration while Elasticsearch is still the default, and
+# only then is Logstash made the default; Fleet keeps the Elasticsearch
+# output for a policy with Fleet Server in it (depends_on below).
 #
 # Enrolling Fleet Server is Ansible's (roles/fleet_server): run
 # `mise run ansible:site` again once this stack is applied.
 # ----------------------------------------------------------------------------
 
 locals {
-  ca_pem = trimspace(file("${path.module}/../../ansible/pki/elastic-ca.crt"))
+  pki    = "${path.module}/../../ansible/pki"
+  ca_pem = trimspace(file("${local.pki}/elastic-ca.crt"))
+  # The agents' shared client certificate for Logstash's mTLS
+  # (`mise run pki:agent-client`, once).
+  agent_client_crt_pem = trimspace(file("${local.pki}/agent-client.crt"))
 
   fleet_server_url = "https://192.168.68.33:8220" # kibana VM
   es_hosts         = ["https://192.168.68.30:9200", "https://192.168.68.31:9200", "https://192.168.68.32:9200"]
+  logstash_host    = "192.168.68.34:5044" # ingest VM
 
   # Fleet Server's own logs and metrics belong to the platform workspace
   # (namespace = workspace id).
   platform_namespace = "platform"
 }
 
-# -- Integration packages (versions compatible with Kibana 9.5.4) ----------------
+# The agents' client key, decrypted with your age key (stack.tm.hcl).
+data "sops_file" "agent_client_key" {
+  source_file = "${local.pki}/agent-client.key.sops"
+  input_type  = "raw"
+}
+
+# -- Integration packages (global.fleet_packages, terramate.tm.hcl) ---------------
 
 resource "elasticstack_fleet_integration" "fleet_server" {
   name         = "fleet_server"
-  version      = "1.6.1"
+  version      = local.fleet_packages.fleet_server
   skip_destroy = true
 }
 
 resource "elasticstack_fleet_integration" "system" {
   name         = "system"
-  version      = "3.0.0"
+  version      = local.fleet_packages.system
   skip_destroy = true
 }
 
@@ -70,8 +83,37 @@ resource "elasticstack_fleet_output" "elasticsearch" {
     verification_mode       = "full"
   }
 
+  # Logstash is the default (below); Fleet Server's policy keeps this one.
+  default_integrations = false
+  default_monitoring   = false
+
+  depends_on = [elasticstack_fleet_output.logstash]
+}
+
+# Every agent's output (data and monitoring): Logstash, mTLS with the
+# agents' shared client certificate. Logstash routes each event to the data
+# stream the agent set (data_stream.*, the integration's namespace).
+resource "elasticstack_fleet_output" "logstash" {
+  output_id = "logstash-ingest"
+  name      = "Logstash (ingest)"
+  type      = "logstash"
+  hosts     = [local.logstash_host]
+
+  ssl = {
+    certificate_authorities = [local.ca_pem]
+    certificate             = local.agent_client_crt_pem
+    key                     = trimspace(data.sops_file.agent_client_key.raw)
+    verification_mode       = "full"
+  }
+
   default_integrations = true
   default_monitoring   = true
+
+  # Only once Fleet Server's policy has its integration (see the top).
+  depends_on = [
+    elasticstack_fleet_integration_policy.fleet_server,
+    elasticstack_fleet_integration_policy.fleet_server_system,
+  ]
 }
 
 # -- Fleet Server's agent policy ----------------------------------------------------

@@ -1,0 +1,153 @@
+---
+# Installs Elastic Agent and enrolls it into the host group's Fleet policy
+# (elastic_agent_policy_id: agent-policies/<group>/), once: an enrolled
+# agent is never re-enrolled, only waited for until it's connected. Moving
+# it to another policy is done in Fleet. Fleet Server's host has its own
+# role (roles/fleet_server).
+#
+# Run order: Ansible runs before the agent-policy stacks. Until the group's
+# policy exists, this host is skipped with a message; run
+# `mise run ansible:site` again after applying agent-policies/.
+
+- name: Check the agent policy exists (agent-policies/{{ elastic_agent_policy_id }})
+  ansible.builtin.uri:
+    url: "{{ elastic_agent_kibana_url }}/api/fleet/agent_policies/{{ elastic_agent_policy_id }}"
+    ca_path: "{{ elastic_ca_cert }}"
+    url_username: elastic
+    url_password: "{{ elastic_agent_api_password }}"
+    force_basic_auth: true
+    status_code: [200, 404]
+  delegate_to: localhost
+  become: false
+  register: _agent_policy
+  check_mode: false # read-only: GET the agent policy
+
+- name: Skip the agent until its policy exists
+  when: _agent_policy.status == 404
+  block:
+    - name: Say why the agent is skipped
+      ansible.builtin.debug:
+        msg: >-
+          Agent policy {{ elastic_agent_policy_id }} doesn't exist yet: apply
+          agent-policies/{{ elastic_agent_policy_id }} (mise run tofu:plan,
+          tofu:apply there), then run `mise run ansible:site` again.
+
+    - name: End this host's agent play
+      ansible.builtin.meta: end_host
+
+- name: Create the directory for the agent's CA
+  ansible.builtin.file:
+    path: "{{ elastic_agent_ca | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  become: true
+
+- name: Install the internal CA for the agent (Fleet Server's certificate)
+  ansible.builtin.copy:
+    src: "{{ elastic_ca_cert }}"
+    dest: "{{ elastic_agent_ca }}"
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+
+# -- What's there now -------------------------------------------------------------
+
+- name: Check whether the agent is installed
+  ansible.builtin.stat:
+    path: /usr/bin/elastic-agent
+  become: true
+  register: _agent_binary
+
+- name: Read the installed agent's status
+  ansible.builtin.command: /usr/bin/elastic-agent status --output json
+  become: true
+  register: _agent_status
+  check_mode: false # read-only: prints the agent's status
+  changed_when: false
+  failed_when: false
+  until: _agent_status.rc == 0
+  retries: 12
+  delay: 5
+  when: _agent_binary.stat.exists
+
+# `enroll --force` on an enrolled agent registers a new one and leaves the
+# old one offline in Fleet: only an agent that isn't managed is enrolled.
+- name: Decide what to do
+  ansible.builtin.set_fact:
+    _agent_install: "{{ not _agent_binary.stat.exists }}"
+    _agent_enroll: >-
+      {{ not _agent_binary.stat.exists
+         or not ((_agent_status.stdout | default('{}') | from_json).info.is_managed | default(false)) }}
+
+# -- Install and/or enroll ------------------------------------------------------------
+
+- name: Install and enroll into {{ elastic_agent_policy_id }}
+  when: _agent_enroll
+  block:
+    - name: Read the policy's enrollment token
+      ansible.builtin.uri:
+        url: "{{ elastic_agent_kibana_url }}/api/fleet/enrollment_api_keys?kuery=policy_id:%22{{ elastic_agent_policy_id }}%22"
+        ca_path: "{{ elastic_ca_cert }}"
+        url_username: elastic
+        url_password: "{{ elastic_agent_api_password }}"
+        force_basic_auth: true
+      delegate_to: localhost
+      become: false
+      register: _agent_tokens
+      no_log: true
+
+    - name: Install the agent and enroll it
+      ansible.builtin.include_tasks: install.yml
+      when: _agent_install
+
+    - name: Enroll the installed agent
+      when: not _agent_install
+      block:
+        - name: Start the agent (enroll talks to the running daemon)
+          ansible.builtin.systemd_service:
+            name: elastic-agent
+            state: started
+            enabled: true
+          become: true
+
+        # The enrollment token is on the command line for these few
+        # seconds: `enroll` has no file option for it.
+        - name: Enroll the agent
+          ansible.builtin.command:
+            argv:
+              - /usr/bin/elastic-agent
+              - enroll
+              - --force
+              - --url={{ fleet_url }}
+              - --certificate-authorities={{ elastic_agent_ca }}
+              - --enrollment-token={{ (_agent_tokens.json['items'] | selectattr('active') | first).api_key }}
+          become: true
+          changed_when: true
+          no_log: true
+
+- name: Keep the agent running and enabled at boot
+  ansible.builtin.systemd_service:
+    name: elastic-agent
+    state: started
+    enabled: true
+  become: true
+
+# FleetState 2: connected (the JSON output's name for the YAML output's
+# fleet_state; both accepted).
+- name: Wait for the agent to be connected to Fleet
+  ansible.builtin.command: /usr/bin/elastic-agent status --output json
+  become: true
+  register: _agent_status_after
+  check_mode: false # read-only: prints the agent's status
+  changed_when: false
+  failed_when: false
+  until: >-
+    _agent_status_after.rc == 0
+    and ((_agent_status_after.stdout | from_json).info.is_managed | default(false))
+    and ((_agent_status_after.stdout | from_json).FleetState
+         | default((_agent_status_after.stdout | from_json).fleet_state | default(0))) == 2
+  retries: 30
+  delay: 10

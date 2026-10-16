@@ -67,7 +67,7 @@ works. `tofu:*` are `terramate run` from `{{cwd}}`; `ansible:site` passes
 extra args through `printf %q` inside the `sops exec-env` command, only
 when there are some (`printf '%q '` with none prints `''`).
 
-Ansible (`ansible/`): DEBs for Elasticsearch, Kibana, Logstash; Elastic
+Ansible (`ansible/`; see below for agents): DEBs for Elasticsearch, Kibana, Logstash; Elastic
 Agent tarball (signature + SHA-512) for Fleet Server (servers flavor, the
 template has no agent) and the EDOT gateway (`elastic-agent otel`); Docker
 Compose only for the OTel demo (Docker is in core's template, on every
@@ -86,22 +86,45 @@ data_stream.namespace=otel_demo` on its collector container (upstream's
 role's defaults, not group_vars, until `workspaces/otel_demo` exists for
 the contract check. The inventory reaches Proxmox through core's Caddy
 (`https://pve1.homelab.bcochofel.com`, Let's Encrypt, verified).
-Agents on the other VMs, `remote_monitoring_user` and the agents' client
-certificate for Logstash come with `agent-policies/` (PR 10).
+Stack monitoring (`remote_monitoring_user` and the elasticsearch, kibana,
+logstash integrations) is not set up.
 
-Shared stacks (tag `elastic` + `shared`): `shared/security` (roles
+Shared stacks (tag `elastic` + `shared`; `shared/fleet` also `fleet`): `shared/security` (roles
 `platform-admin`, `platform-viewer`: native users, no SSO; no users or API
 keys managed here), `shared/data` (ILM `platform-30d` via `logs|metrics|
 traces@custom`, which the OTel templates compose too, checked in ES
 v9.5.4's source), `shared/fleet` (packages `fleet_server` 1.6.1, `system`
 3.0.0; Fleet Server host; `fleet-default-output` imported; policy
-`fleet-server-policy` in namespace `platform`). The Logstash output and
-the agents' client certificate come with the first host group (PR 10),
-made default only after Fleet Server's policy has its integration (Basic:
-no per-policy outputs). Order: `shared/data` and `shared/security` after
+`fleet-server-policy` in namespace `platform`; the Logstash output, see
+below). Order: `shared/data` and `shared/security` after
 `/platform/elastic`, `shared/fleet` after `/shared/data`. Elastic stacks
 get a comment-only generated `variables.tf` (TFLint). The OpenTofu API key
 is the human's (`ELASTICSEARCH_API_KEY` in `homelab.yaml`).
+
+Agent policies and workspaces (PR 10): `agent-policies/<group>/`
+(`elasticsearch`, `ingest`, `otel-demo`; tags `elastic`, `agent-policy`,
+`fleet`; after `/shared/fleet`) hold `agent-policy.yaml`;
+`workspaces/<id>/` (`platform`, `otel_demo`; tags `elastic`, `workspace`;
+after `tag:shared`) hold `workspace.yaml`, optional `dashboards/`,
+`rules/`. Both read their YAML at plan time (`yamldecode(file())`), so
+`tofu validate` catches YAML errors; only `module_ref` is read by
+Terramate (a module source can't be an expression; `lets` are evaluated
+in every stack, hence `tm_try`). Their `main.tf` and `outputs.tf` are
+hand-written (TFLint wants them, and generating a name other stacks write
+by hand breaks `terramate run`). Package versions: `global.fleet_packages`,
+generated as `local.fleet_packages` into stacks tagged `fleet`. The
+platform workspace's `unknown_namespace` rule is generated from
+`terramate.stacks.list` (every workspace id; Fleet Server's `fleet_server.*`
+datasets excluded). `shared/fleet` has the Logstash output (default, after
+Fleet Server's integration; Fleet keeps Elasticsearch for the Fleet Server
+policy) with the agents' shared client certificate (`mise run
+pki:agent-client`, the human's; key read by the `carlpett/sops` provider,
+`global.extra_providers` in its stack.tm.hcl). Ansible: `elastic_agent`
+installs the tarball and enrolls into `elastic_agent_policy_id`, skipping
+the host until the policy exists; the health check polls Fleet for every
+agent (`online`), with retries. `scripts/check_contract.py` also checks
+`.tf` namespace literals and `elastic_agent_policy_id`s. Rules run with
+OpenTofu's API key: it needs read on the data streams.
 
 Releases: semantic-release as core's (`.releaserc.js`, `package.json`,
 `package-lock.json` copied from core; `release.yml` is the human's to

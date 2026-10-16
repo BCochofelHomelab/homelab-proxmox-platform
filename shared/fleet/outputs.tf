@@ -8,6 +8,14 @@ output "fleet_server_host" {
   description = "Where agents enroll"
 }
 
+output "outputs" {
+  value = {
+    default       = elasticstack_fleet_output.logstash.output_id
+    elasticsearch = elasticstack_fleet_output.elasticsearch.output_id
+  }
+  description = "Fleet outputs: the default (Logstash) and Elasticsearch (Fleet Server's)"
+}
+
 output "packages" {
   value = {
     for package in [elasticstack_fleet_integration.fleet_server, elasticstack_fleet_integration.system] :

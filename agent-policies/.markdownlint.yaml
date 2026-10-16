@@ -1,0 +1,9 @@
+---
+# Replaces the root .markdownlint.yaml for the stacks' README.md files,
+# whose tables terraform-docs generates (the terraform_docs hook): its
+# <a name="..."> anchors and <pre>/<br> tags (MD033), and descriptions
+# copied verbatim, URLs included (MD034). It replaces rather than extends
+# the root file, so the root's MD013 is repeated.
+MD013: false
+MD033: false
+MD034: false

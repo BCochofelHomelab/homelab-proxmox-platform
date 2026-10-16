@@ -1,0 +1,70 @@
+---
+# Installs Elastic Agent {{ elastic_version }} from Elastic's tarball,
+# checked before it runs: SHA-512, and the signature against Elastic's key
+# (the keyring elastic_repo installed, verified by fingerprint). `install`
+# enrolls in the same command. Expects _agent_tokens (main.yml). The same
+# steps as roles/fleet_server/tasks/install.yml, without the servers
+# flavor.
+
+- name: Create the download directory
+  ansible.builtin.file:
+    path: "{{ elastic_agent_download_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  become: true
+
+- name: Download the Elastic Agent tarball, its checksum and signature
+  ansible.builtin.get_url:
+    url: "{{ elastic_agent_url }}{{ item }}"
+    dest: "{{ elastic_agent_download_dir }}/{{ elastic_agent_name }}.tar.gz{{ item }}"
+    mode: "0600"
+  loop: ["", ".sha512", ".asc"]
+  become: true
+
+- name: Verify the signature with Elastic's key
+  ansible.builtin.command:
+    argv:
+      - gpgv
+      - --keyring
+      - /usr/share/keyrings/elastic.gpg
+      - "{{ elastic_agent_download_dir }}/{{ elastic_agent_name }}.tar.gz.asc"
+      - "{{ elastic_agent_download_dir }}/{{ elastic_agent_name }}.tar.gz"
+  become: true
+  changed_when: false
+
+- name: Verify the checksum
+  ansible.builtin.command:
+    argv: [sha512sum, -c, "{{ elastic_agent_name }}.tar.gz.sha512"]
+    chdir: "{{ elastic_agent_download_dir }}"
+  become: true
+  changed_when: false
+
+- name: Unpack the tarball
+  ansible.builtin.unarchive:
+    src: "{{ elastic_agent_download_dir }}/{{ elastic_agent_name }}.tar.gz"
+    dest: "{{ elastic_agent_download_dir }}"
+    remote_src: true
+  become: true
+
+# The enrollment token is on the command line for these few seconds:
+# `install` has no file option for it.
+- name: Install the agent and enroll it into {{ elastic_agent_policy_id }}
+  ansible.builtin.command:
+    argv:
+      - "{{ elastic_agent_download_dir }}/{{ elastic_agent_name }}/elastic-agent"
+      - install
+      - --non-interactive
+      - --url={{ fleet_url }}
+      - --certificate-authorities={{ elastic_agent_ca }}
+      - --enrollment-token={{ (_agent_tokens.json['items'] | selectattr('active') | first).api_key }}
+  become: true
+  changed_when: true
+  no_log: true
+
+- name: Remove the download directory
+  ansible.builtin.file:
+    path: "{{ elastic_agent_download_dir }}"
+    state: absent
+  become: true

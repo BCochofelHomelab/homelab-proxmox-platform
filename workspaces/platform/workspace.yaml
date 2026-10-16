@@ -1,0 +1,25 @@
+---
+# The platform workspace (terramate/workspace.tm.hcl): the Elastic Stack's
+# own telemetry. Owner: sre-lead. Namespace = workspace id: "platform".
+display_name: Platform
+description: >-
+  The observability platform itself: Fleet Server, the Elastic Agents' own
+  logs and metrics, and the platform VMs' host data. Owner: sre-lead.
+color: "#0B64DD"
+data_types: [logs, metrics]
+
+# Native users (no SSO in the homelab): give them the workspace's roles
+# (outputs) in Kibana. No groups, so no role mappings.
+access: {}
+
+# The default alert destination. On the Basic licence only .server-log and
+# .index are available: alerts land in Kibana's log.
+connectors:
+  server_log:
+    type: .server-log
+    name: Server log
+alert_actions:
+  - connector: server_log
+    params:
+      level: warn
+      message: "[platform] {{rule.name}}: {{context.reason}}{{context.message}}"
