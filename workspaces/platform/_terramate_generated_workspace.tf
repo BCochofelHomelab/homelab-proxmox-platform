@@ -33,7 +33,7 @@ module "workspace" {
     unknown_namespace = {
       interval     = "5m"
       name         = "Data in a namespace with no workspace"
-      params       = "{\"esQuery\":\"{\\\"query\\\":{\\\"bool\\\":{\\\"must_not\\\":[{\\\"terms\\\":{\\\"data_stream.namespace\\\":[\\\"otel_demo\\\",\\\"platform\\\"]}},{\\\"prefix\\\":{\\\"data_stream.dataset\\\":\\\"fleet_server.\\\"}}]}}}\",\"excludeHitsFromPreviousRun\":true,\"index\":[\"logs-*\",\"metrics-*\",\"traces-*\"],\"searchType\":\"esQuery\",\"size\":10,\"threshold\":[0],\"thresholdComparator\":\"\\u003e\",\"timeField\":\"@timestamp\",\"timeWindowSize\":15,\"timeWindowUnit\":\"m\"}"
+      params       = "{\"esQuery\":\"{\\\"query\\\":{\\\"bool\\\":{\\\"must_not\\\":[{\\\"terms\\\":{\\\"data_stream.namespace\\\":[\\\"core\\\",\\\"otel_demo\\\",\\\"platform\\\"]}},{\\\"prefix\\\":{\\\"data_stream.dataset\\\":\\\"fleet_server.\\\"}}]}}}\",\"excludeHitsFromPreviousRun\":true,\"index\":[\"logs-*\",\"metrics-*\",\"traces-*\"],\"searchType\":\"esQuery\",\"size\":10,\"threshold\":[0],\"thresholdComparator\":\"\\u003e\",\"timeField\":\"@timestamp\",\"timeWindowSize\":15,\"timeWindowUnit\":\"m\"}"
       rule_type_id = ".es-query"
       tags = [
         "contract",
