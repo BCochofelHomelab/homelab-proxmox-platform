@@ -8,3 +8,7 @@ collections:
   # (ansible.cfg [community.sops] vars_stage = task).
   - name: community.sops
     version: ">=2.0.0"
+  # The dynamic inventory (inventory/platform.proxmox.yml): Proxmox's VMs,
+  # grouped by tag. Needs requests in .venv (requirements.txt).
+  - name: community.proxmox
+    version: ">=2.0.0"

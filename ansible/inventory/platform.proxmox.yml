@@ -1,0 +1,35 @@
+---
+# The inventory: Proxmox's own list of VMs, never OpenTofu's state. Every VM
+# tagged "platform" (the VM stacks tag them all, terramate/vms.tm.hcl),
+# grouped by its other tags: es-01 tagged "elasticsearch" is in group
+# elasticsearch.
+#
+# Read with its own read-only token, inventory@pve!ansible (role
+# AnsibleInventory: VM.Audit + VM.GuestAgent.Audit), never the AI agent's.
+# Its secret is PROXMOX_TOKEN_SECRET in ~/.secrets/homelab.yaml, which
+# `mise run ansible:site` passes to this one command. The user and token id
+# are set here, so another PROXMOX_* in the environment can't stand in.
+plugin: community.proxmox.proxmox
+url: https://192.168.68.20:8006
+user: inventory@pve
+token_id: ansible
+validate_certs: false # Proxmox's self-signed certificate
+
+exclude_nodes: true # pve1 itself isn't managed here
+want_proxmox_nodes_ansible_host: false
+# Filter on the tags in the VM list first, then read the config (IP, tags)
+# of the VMs that are left only.
+want_facts: false
+want_post_filter_facts: true
+filters:
+  - "'platform' in (proxmox_tags | default('')).split(';')"
+
+# The static IP cloud-init sets (ipconfig0 = "ip=192.168.68.30/22,gw=..."),
+# known before the guest agent answers.
+compose:
+  ansible_host: (proxmox_ipconfig0.ip | default('')).split('/') | first
+
+keyed_groups:
+  - key: proxmox_tags_parsed | difference(['platform', 'terraform'])
+    prefix: ""
+    separator: ""

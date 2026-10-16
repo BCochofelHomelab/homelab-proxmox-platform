@@ -50,8 +50,8 @@ Ansible, in [`ansible/`](ansible/), configures the VMs between the two.
 
 ## Status
 
-This repository is being set up: the toolchain, the checks and Terramate's
-configuration are in; the stacks and the playbooks come next.
+This repository is being set up: the VM stacks and Ansible's inventory
+are in; the playbooks' roles and the Elastic content come next.
 
 ## Getting started
 
@@ -61,6 +61,21 @@ Everything a contributor needs, from a clone, on Linux (Ubuntu or WSL2):
 mise trust && mise install   # the pinned toolchain, Ansible in .venv, git hooks
 mise run check               # what CI runs
 ```
+
+Applying (yours only: each runs one command with
+`~/.secrets/homelab.yaml`):
+
+```bash
+mise run tofu:init           # every stack under the current directory
+mise run tofu:plan           # each saved to its stack's tfplan: review it
+mise run tofu:apply          # applies those plans
+mise run ansible:site        # every platform VM; extra args after --
+```
+
+`tofu:*` run every stack below where you run them, in order: from the
+repo root, all of them; from `platform/elastic`, that one. Ansible finds
+the VMs in Proxmox by tag (`ansible/inventory/platform.proxmox.yml`), with
+its own read-only token.
 
 How a change flows, and the rules it follows:
 [`CONTRIBUTING.md`](CONTRIBUTING.md).

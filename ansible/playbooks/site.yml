@@ -1,0 +1,16 @@
+---
+# Full provision, after the VM stacks are applied (`mise run tofu:apply`).
+# The roles come with their plays; until then this proves the inventory
+# and SSH: every platform VM, grouped by its Proxmox tags, answers.
+
+- name: Reachable
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Wait for SSH (a fresh VM is still running cloud-init)
+      ansible.builtin.wait_for_connection:
+        timeout: 300
+
+    - name: Show each VM's groups
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }} ({{ ansible_host }}): {{ group_names | sort | join(', ') }}"

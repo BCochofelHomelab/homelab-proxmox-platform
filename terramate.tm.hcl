@@ -67,6 +67,21 @@ globals {
     template = "ubuntu-26.04-core"
   }
 
+  # Every VM's network and cloud-init user, as homelab-proxmox-core's
+  # (terraform/variables.tf): CoreDNS then Pi-hole, the template's user,
+  # and your public key (nothing to encrypt).
+  network = {
+    gateway      = "192.168.68.1"
+    bridge       = "vmbr0"
+    nameservers  = ["192.168.68.2", "192.168.68.5"]
+    searchdomain = "homelab.bcochofel.com"
+    prefix       = 22
+  }
+  ciuser = "ubuntu"
+  sshkeys = [
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEZGQwHOs8V9ndmLn3NuQXxuD0Ht4zaz+c6/WaEMAA6S bcochofel@NUC12WSHi7",
+  ]
+
   # homelab-proxmox-core's VM module, by tag (core's tags are X.Y.Z).
   vm_module = {
     source = "git::https://github.com/BCochofelHomelab/homelab-proxmox-core.git//terraform/modules/vm"
