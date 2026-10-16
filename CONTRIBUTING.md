@@ -32,13 +32,26 @@ Short-lived branches off `main`, deleted after merge, named
 `feature/` (or `feat/`), `bugfix/` (or `fix/`), `hotfix/`, `release/`,
 `chore/`. Lowercase letters, numbers and hyphens only.
 
-## Commits
+## Commits and releases
 
 [Conventional Commits](https://www.conventionalcommits.org/), checked by
 commitlint ([`commitlint.config.js`](commitlint.config.js)):
 `<type>(optional scope): <subject>`, with type `feat`, `fix`, `docs`,
 `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore` or `revert`.
 `git commit` without `-m` opens the repo's template.
+
+Every merge to `main` runs
+[semantic-release](https://semantic-release.gitbook.io/)
+([`.releaserc.js`](.releaserc.js)), which computes the version from the
+commits since the last release, the same way as `homelab-proxmox-core`:
+
+- `fix:` → patch, `feat:` → minor, `feat!:` or a `BREAKING CHANGE:`
+  footer → major.
+- `docs:`, `chore:`, `style:` and the rest → no release on their own.
+
+It publishes a GitHub Release with generated notes and a tag, `X.Y.Z`
+with no `v`. No changelog file and no commit back to `main`. With squash
+merges, the pull request's title is the commit it reads.
 
 ## Checks
 
@@ -90,7 +103,7 @@ same versions. `mise tasks` lists the repo's commands.
 | ShellCheck, markdownlint-cli2, actionlint, zizmor | Shell scripts, Markdown, and GitHub workflows (lint and security). |
 | gitleaks | No secret committed: staged changes, and the full history in CI. |
 | SOPS, age | The inventory's encrypted secrets, and the AI agent's credentials in its devcontainer. |
-| pre-commit, commitlint | Hooks and commit messages. |
+| pre-commit, commitlint, semantic-release | Hooks, commit messages, releases. |
 | GitHub CLI (`gh`) | Pull requests and runs; the machine user's in the devcontainer. |
 | Python, uv, Node.js | The runtimes for `.venv/` and the Node-based hooks. |
 | github-mcp-server, terraform-mcp-server, mcp-proxmox | The AI agent's read-only MCP servers. |
