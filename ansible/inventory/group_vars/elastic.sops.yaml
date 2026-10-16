@@ -1,4 +1,5 @@
 elastic_password: ENC[AES256_GCM,data:PJJcIoMAfiVkEc/Zh9+hB/pGvPCSa4XdIR+vN1hYIU4=,iv:lm7KRSJAckauEIwRLyH9C2DB9NJVLM9Zpa9CoyOLk9w=,tag:ENl8R25hJefwfVi7BaJ+Xg==,type:str]
+remote_monitoring_password: ENC[AES256_GCM,data:ZfzYlYaN32SSCyEagBmQ/uRaQEcsURn2RzbT3e7zHNE=,iv:r/+7u2jyxlWmsAqFm47oBtdk/BmTZGG5sJkEVKT7nDQ=,tag:lN1s+PXUPXr7O6EXGaPgqQ==,type:str]
 sops:
     age:
         - enc: |
@@ -19,7 +20,7 @@ sops:
             AM2eGcnk+dFcNDgu37N8OcjXOn6LF0owwnGv/D/WrhUGl85iJAmR4w==
             -----END AGE ENCRYPTED FILE-----
           recipient: age1f0qs93yyg2mxxyxhft2fdzdda3nfx5phy3h2gmzfslj2k4rpjg8qrps26r
-    lastmodified: "2026-10-16T16:33:58Z"
-    mac: ENC[AES256_GCM,data:K3HQMLYSqK/UE9LQmXLebkB5Erk1Wt737s1wypYs8uqucj6cwHVrsE080KfgUdawHIGE0KjnRBQzPDBcDNbllmkBOu8M57avOV2t+DHhEL6B/G5tDLJn49VCSyIX7H7VIgUHaJWhiy7nDI+1Kv42zotdbOLJPpnCVY/XiDscDRI=,iv:d7BhZfqCkgAB09vYPcU+8Zctopnes8gCD4CAF+3tSdI=,tag:BqiUfPRFDq0buHLACUAWUQ==,type:str]
+    lastmodified: "2026-10-16T18:57:03Z"
+    mac: ENC[AES256_GCM,data:PxCvHTQcxRyC2u9oVpaO/oMrBD4maXSmEddFwuaA1n3uKKWlSuA6fItuAPC8H66TTxdbS1O5wyIlPTvzxgcWTtuIZAl05gMKGSLZ1y/TOgyfcUqEIOkmQczTSLYQ5xj7EU5mbR32ml4rk5gioCLqUSCuBfcJSZzYSkkd8oOxsTk=,iv:gkRT0J5mKrugZc0TH6oQVS57lSualt0EmuB7bSkFNLs=,tag:7ORbGZKWQ4c6pWUbXGWUFw==,type:str]
     unencrypted_suffix: _unencrypted
     version: 3.13.3

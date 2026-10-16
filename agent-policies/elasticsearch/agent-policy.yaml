@@ -10,3 +10,19 @@ integrations:
     package: system
     namespace: platform
     description: Host logs and metrics
+  # Stack monitoring and the node's logs (Kibana's Stack Monitoring):
+  # each agent collects its own node (scope: node) over HTTPS, verified
+  # against the internal CA, as remote_monitoring_user.
+  - name: elasticsearch
+    package: elasticsearch
+    namespace: platform
+    description: Stack monitoring and logs of this Elasticsearch node
+    inputs:
+      elasticsearch-elasticsearch/metrics:
+        vars:
+          hosts: ["https://localhost:9200"]
+          scope: node
+          username: remote_monitoring_user
+          password: {secret: remote_monitoring_password}
+          ssl: |
+            certificate_authorities: ["/etc/elastic-agent/ca.crt"]

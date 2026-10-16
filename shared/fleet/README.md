@@ -28,13 +28,16 @@ No modules.
 | ---- | ---- |
 | [elasticstack_fleet_agent_policy.fleet_server](https://registry.terraform.io/providers/elastic/elasticstack/latest/docs/resources/fleet_agent_policy) | resource |
 | [elasticstack_fleet_integration.fleet_server](https://registry.terraform.io/providers/elastic/elasticstack/latest/docs/resources/fleet_integration) | resource |
+| [elasticstack_fleet_integration.monitoring](https://registry.terraform.io/providers/elastic/elasticstack/latest/docs/resources/fleet_integration) | resource |
 | [elasticstack_fleet_integration.system](https://registry.terraform.io/providers/elastic/elasticstack/latest/docs/resources/fleet_integration) | resource |
 | [elasticstack_fleet_integration_policy.fleet_server](https://registry.terraform.io/providers/elastic/elasticstack/latest/docs/resources/fleet_integration_policy) | resource |
+| [elasticstack_fleet_integration_policy.fleet_server_kibana](https://registry.terraform.io/providers/elastic/elasticstack/latest/docs/resources/fleet_integration_policy) | resource |
 | [elasticstack_fleet_integration_policy.fleet_server_system](https://registry.terraform.io/providers/elastic/elasticstack/latest/docs/resources/fleet_integration_policy) | resource |
 | [elasticstack_fleet_output.elasticsearch](https://registry.terraform.io/providers/elastic/elasticstack/latest/docs/resources/fleet_output) | resource |
 | [elasticstack_fleet_output.logstash](https://registry.terraform.io/providers/elastic/elasticstack/latest/docs/resources/fleet_output) | resource |
 | [elasticstack_fleet_server_host.kibana](https://registry.terraform.io/providers/elastic/elasticstack/latest/docs/resources/fleet_server_host) | resource |
 | [sops_file.agent_client_key](https://registry.terraform.io/providers/carlpett/sops/latest/docs/data-sources/file) | data source |
+| [sops_file.elastic](https://registry.terraform.io/providers/carlpett/sops/latest/docs/data-sources/file) | data source |
 
 ## Inputs
 

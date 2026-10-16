@@ -12,6 +12,16 @@
 #       package:   a key of global.fleet_packages (installed by shared/fleet)
 #       namespace: the workspace this integration's data belongs to
 #       description: optional
+#       inputs:
+#                  since one variable's type differs from the next)    optional, by input id (<policy template>-<input type>,
+#                  the package's manifest): only what differs from the
+#                  package's defaults
+#         <input id>:
+#           enabled: true (default)
+#           vars:    the input's variables; `{secret: <key>}` is read from
+#                    ansible/inventory/group_vars/elastic.sops.yaml
+#           streams: by data stream (<package>.<dataset>):
+#             <stream>: {enabled: true}
 #
 # The policy id is the folder's name; Ansible enrolls each VM into its
 # group's (elastic_agent_policy_id, group_vars). Every namespace must name a
@@ -24,6 +34,32 @@ generate_hcl "_terramate_generated_agent_policy.tf" {
     locals {
       policy_id = terramate.stack.path.basename
       spec      = yamldecode(file("${path.module}/agent-policy.yaml"))
+
+      # A variables map as the JSON the provider wants, with every
+      # `{secret: <key>}` replaced by that key's value. Built as text: a
+      # value's type differs from one variable to the next.
+      inputs = {
+        for i in local.spec.integrations : i.name => {
+          for id, input in try(i.inputs, {}) : id => {
+            enabled = try(input.enabled, true)
+            vars = try(input.vars, null) == null ? null : format("{%s}", join(",", [
+              for k, v in input.vars : format("%s:%s", jsonencode(k),
+              can(v.secret) ? jsonencode(data.sops_file.secrets.data[v.secret]) : jsonencode(v))
+            ]))
+            # null, not {}: no streams listed means the package's defaults.
+            streams = length(try(input.streams, {})) == 0 ? null : {
+              for sid, stream in input.streams : sid => {
+                enabled = try(stream.enabled, true)
+              }
+            }
+          }
+        }
+      }
+    }
+
+    # Read only for `{secret: ...}` values (agent-policies/agent-policies.tm.hcl).
+    data "sops_file" "secrets" {
+      source_file = "${path.module}/../../ansible/inventory/group_vars/elastic.sops.yaml"
     }
 
     resource "elasticstack_fleet_agent_policy" "this" {
@@ -46,6 +82,7 @@ generate_hcl "_terramate_generated_agent_policy.tf" {
       agent_policy_id     = elasticstack_fleet_agent_policy.this.policy_id
       integration_name    = each.value.package
       integration_version = local.fleet_packages[each.value.package]
+      inputs              = length(local.inputs[each.key]) > 0 ? local.inputs[each.key] : null
     }
   }
 }

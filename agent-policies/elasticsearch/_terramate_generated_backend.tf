@@ -7,6 +7,10 @@ terraform {
       source  = "elastic/elasticstack"
       version = "~> 0.16.5"
     }
+    sops = {
+      source  = "carlpett/sops"
+      version = "~> 1.4.1"
+    }
   }
   cloud {
     hostname     = "app.terraform.io"

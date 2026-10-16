@@ -68,8 +68,11 @@ globals {
   # which is the change's scope. Versions compatible with Kibana 9.5.4 (the
   # package registry, kibana.version=9.5.4).
   fleet_packages = {
-    fleet_server = "1.6.1"
-    system       = "3.0.0"
+    fleet_server  = "1.6.1"
+    system        = "3.0.0"
+    elasticsearch = "1.23.3"
+    kibana        = "2.9.0"
+    logstash      = "2.11.3"
   }
 
   proxmox = {

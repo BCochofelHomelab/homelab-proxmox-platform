@@ -10,3 +10,15 @@ integrations:
     package: system
     namespace: platform
     description: Host logs and metrics
+  # Logstash's monitoring API listens on 127.0.0.1:9600, no auth (the
+  # package's default host). The stack-monitoring streams (Kibana's Stack
+  # Monitoring) are off by default: on here.
+  - name: logstash
+    package: logstash
+    namespace: platform
+    description: Stack monitoring, metrics and logs of Logstash
+    inputs:
+      logstash-logstash/metrics:
+        streams:
+          logstash.stack_monitoring.node: {enabled: true}
+          logstash.stack_monitoring.node_stats: {enabled: true}
