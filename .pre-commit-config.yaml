@@ -1,6 +1,12 @@
 ---
 # The same hooks as homelab-proxmox-core, minus Packer (the VM template is
 # core's), plus Terramate's and the workspace contract's.
+# Every hook runs once, at commit. Without this, a hook that names no
+# stages also runs at commit-msg, with no files: a second pass that skips
+# every file hook and re-runs the always_run ones. commitlint names its own
+# stage (commit-msg).
+default_stages: [pre-commit]
+
 repos:
   # General file checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
