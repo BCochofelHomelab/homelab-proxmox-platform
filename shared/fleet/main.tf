@@ -33,6 +33,12 @@ locals {
   platform_namespace = "platform"
 }
 
+# remote_monitoring_user's password (Kibana's stack monitoring, below):
+# Ansible's group_vars/elastic.sops.yaml, the file Ansible sets it from.
+data "sops_file" "elastic" {
+  source_file = "${path.module}/../../ansible/inventory/group_vars/elastic.sops.yaml"
+}
+
 # The agents' client key, decrypted with your age key (stack.tm.hcl).
 data "sops_file" "agent_client_key" {
   source_file = "${local.pki}/agent-client.key.sops"
@@ -50,6 +56,16 @@ resource "elasticstack_fleet_integration" "fleet_server" {
 resource "elasticstack_fleet_integration" "system" {
   name         = "system"
   version      = local.fleet_packages.system
+  skip_destroy = true
+}
+
+# Stack monitoring: Elasticsearch (agent-policies/elasticsearch), Kibana
+# (below), Logstash (agent-policies/ingest).
+resource "elasticstack_fleet_integration" "monitoring" {
+  for_each = toset(["elasticsearch", "kibana", "logstash"])
+
+  name         = each.key
+  version      = local.fleet_packages[each.key]
   skip_destroy = true
 }
 
@@ -146,4 +162,30 @@ resource "elasticstack_fleet_integration_policy" "fleet_server_system" {
   agent_policy_id     = elasticstack_fleet_agent_policy.fleet_server.policy_id
   integration_name    = elasticstack_fleet_integration.system.name
   integration_version = elasticstack_fleet_integration.system.version
+}
+
+# Kibana's stack monitoring and logs: the kibana VM is Fleet Server's host.
+# Kibana listens on the VM's address over HTTPS (not localhost), verified
+# against the internal CA (Fleet Server's copy, roles/fleet_server).
+locals {
+  kibana_monitoring_vars = jsonencode({
+    hosts    = ["https://192.168.68.33:5601"]
+    username = "remote_monitoring_user"
+    password = data.sops_file.elastic.data["remote_monitoring_password"]
+    ssl      = "certificate_authorities: [\"/etc/fleet-server/certs/ca.crt\"]\n"
+  })
+}
+
+resource "elasticstack_fleet_integration_policy" "fleet_server_kibana" {
+  name                = "kibana-fleet-server"
+  namespace           = local.platform_namespace
+  description         = "Stack monitoring and logs of Kibana"
+  agent_policy_id     = elasticstack_fleet_agent_policy.fleet_server.policy_id
+  integration_name    = elasticstack_fleet_integration.monitoring["kibana"].name
+  integration_version = elasticstack_fleet_integration.monitoring["kibana"].version
+
+  inputs = {
+    "kibana-kibana/metrics" = { enabled = true, vars = local.kibana_monitoring_vars }
+    "kibana-http/metrics"   = { enabled = true, vars = local.kibana_monitoring_vars }
+  }
 }

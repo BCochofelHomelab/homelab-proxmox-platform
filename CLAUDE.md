@@ -86,8 +86,15 @@ data_stream.namespace=otel_demo` on its collector container (upstream's
 role's defaults, not group_vars, until `workspaces/otel_demo` exists for
 the contract check. The inventory reaches Proxmox through core's Caddy
 (`https://pve1.homelab.bcochofel.com`, Let's Encrypt, verified).
-Stack monitoring (`remote_monitoring_user` and the elasticsearch, kibana,
-logstash integrations) is not set up.
+Stack monitoring: `elasticsearch` (agent-policies/elasticsearch, HTTPS to
+localhost, scope node), `kibana` (on `fleet-server-policy` in
+`shared/fleet`: Kibana listens on 192.168.68.33, not localhost) and
+`logstash` (agent-policies/ingest: its `logstash/metrics` stack-monitoring
+streams are off by default) log in as `remote_monitoring_user`, whose
+password is `remote_monitoring_password` in `group_vars/elastic.sops.yaml`:
+Ansible sets it (10-elasticsearch.yml), OpenTofu reads the same file
+(`sops` provider; in agent-policy.yaml as `{secret: <key>}`, every
+agent-policy stack gets the provider from `agent-policies/agent-policies.tm.hcl`).
 
 Shared stacks (tag `elastic` + `shared`; `shared/fleet` also `fleet`): `shared/security` (roles
 `platform-admin`, `platform-viewer`: native users, no SSO; no users or API
