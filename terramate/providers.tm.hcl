@@ -52,6 +52,12 @@ generate_hcl "variables.tf" {
       description = "Proxmox API token, form user@realm!tokenid=secret (terraform@pve!terraform)"
       sensitive   = true
     }
+
+    variable "cipassword" {
+      type        = string
+      description = "cloud-init user password"
+      sensitive   = true
+    }
   }
 }
 

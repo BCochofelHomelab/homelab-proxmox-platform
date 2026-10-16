@@ -69,9 +69,8 @@ _.python.venv = { path = ".venv", create = true }
 postinstall = '[ -n "${MISE_SKIP_BOOTSTRAP:-}" ] || mise run bootstrap'
 
 # ---------------------------------------------------------------------------
-# Tasks: setup and checks. The credentialed ones (OpenTofu, Ansible) come
-# with the stacks and playbooks that need them; .claude/settings.json
-# already denies them to the AI agent.
+# Tasks: setup and checks. The credentialed ones (OpenTofu, Ansible) are
+# at the bottom; .claude/settings.json denies them to the AI agent.
 # ---------------------------------------------------------------------------
 
 [tasks.bootstrap]
@@ -262,6 +261,45 @@ exit $rc
 # keys.txt (homelab-proxmox-core, docs/CREDENTIALS.md); each task passes it
 # explicitly.
 # ---------------------------------------------------------------------------
+
+# OpenTofu, through `terramate run`: every stack under the directory you run
+# it from, in order (`after`), each with its own state. From the repo root,
+# every stack; from platform/elastic, that one. One sops exec-env holds the
+# credentials for the whole run: TF_TOKEN_app_terraform_io (HCP),
+# TF_VAR_proxmox_api_token, TF_VAR_cipassword and ELASTICSEARCH_API_KEY.
+
+[tasks."tofu:init"]
+description = "tofu init in every stack under the current directory, against HCP Terraform (read-write: ~/.secrets/homelab.yaml)"
+dir = "{{cwd}}"
+env = { SOPS_AGE_KEY_FILE = "{{env.HOME}}/.config/sops/age/bcochofel.txt" }
+run = "sops exec-env ~/.secrets/homelab.yaml 'terramate run -- tofu init'"
+
+[tasks."tofu:plan"]
+description = "Plan every stack under the current directory, each saved to its tfplan, the one to review before applying (read-write)"
+dir = "{{cwd}}"
+env = { SOPS_AGE_KEY_FILE = "{{env.HOME}}/.config/sops/age/bcochofel.txt" }
+run = "sops exec-env ~/.secrets/homelab.yaml 'terramate run -- tofu plan -out=tfplan'"
+
+# Applies each stack's tfplan, saved by tofu:plan: no confirmation prompt,
+# and tofu refuses a plan that's stale against the current state.
+[tasks."tofu:apply"]
+description = "Apply every stack's tfplan under the current directory, saved by tofu:plan (read-write: ~/.secrets/homelab.yaml)"
+dir = "{{cwd}}"
+env = { SOPS_AGE_KEY_FILE = "{{env.HOME}}/.config/sops/age/bcochofel.txt" }
+run = "sops exec-env ~/.secrets/homelab.yaml 'terramate run -- tofu apply tfplan'"
+
+# The inventory reads Proxmox with inventory@pve!ansible, whose secret
+# (PROXMOX_TOKEN_SECRET) comes from homelab.yaml; Ansible decrypts its own
+# group_vars/*.sops.yaml with your key at task time. Extra arguments go to
+# ansible-playbook (mise run ansible:site -- --limit elasticsearch --check):
+# mise appends them to the last line, the call to `site`.
+[tasks."ansible:site"]
+description = "Configure every platform VM (playbooks/site.yml): the inventory token from ~/.secrets/homelab.yaml, the inventory secrets with your key. Extra args after --"
+dir = "{{config_root}}/ansible"
+env = { SOPS_AGE_KEY_FILE = "{{env.HOME}}/.config/sops/age/bcochofel.txt", ANSIBLE_SOPS_AGE_KEYFILE = "{{env.HOME}}/.config/sops/age/bcochofel.txt" }
+shell = "bash -c"
+run = '''
+site() { exec sops exec-env ~/.secrets/homelab.yaml "ansible-playbook playbooks/site.yml $(printf '%q ' "$@")"; }; site'''
 
 [tasks.sops]
 description = "Run sops with your key, from the current directory: mise run sops -- <file> | updatekeys <file>"

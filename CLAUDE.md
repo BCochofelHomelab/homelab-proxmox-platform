@@ -49,6 +49,21 @@ its source). Core's tags are `X.Y.Z` since `2.0.0` (older ones are
 `vX.Y.Z`). Pre-commit runs `terramate fmt`, `terramate generate` and
 `scripts/check_contract.py` (ids and namespaces).
 
+VM stacks hold only `local.vms` (`main.tf`); `terramate/vms.tm.hcl`
+generates core's module call (`data_disk`, core 8.1.0+: an empty scsi1
+disk, `/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi1`, which
+Ansible formats and mounts before Elasticsearch or Logstash writes data),
+`outputs.tf`, and tags every VM `platform`, `terraform` and its Ansible
+groups. Ansible's inventory is `ansible/inventory/platform.proxmox.yml`
+(community.proxmox, needs `requests` in `.venv`): VMs tagged `platform`,
+one group per other tag (`kibana_server`, not `kibana`: a group can't
+share the host's name), `ansible_host` from cloud-init's `ipconfig0`. Its
+token is `inventory@pve!ansible` (role `AnsibleInventory`); user and token
+id are in the file, only `PROXMOX_TOKEN_SECRET` comes from `homelab.yaml`.
+Without it (the agent), the inventory is empty: `--syntax-check` still
+works. `tofu:*` are `terramate run` from `{{cwd}}`; `ansible:site` passes
+extra args through `printf %q` inside the `sops exec-env` command.
+
 ## Decisions that are deliberate (do not "fix" these)
 
 - **Namespace = workspace id**, the only coupling with the module. Ids match
