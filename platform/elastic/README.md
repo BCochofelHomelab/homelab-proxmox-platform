@@ -20,7 +20,7 @@ The Elastic VMs: `es-01`..`03`, `kibana`, `ingest`. Their list is `local.vms` in
 
 | Name | Source | Version |
 | ---- | ------ | ------- |
-| <a name="module_vm"></a> [vm](#module\_vm) | git::https://github.com/BCochofelHomelab/homelab-proxmox-core.git//terraform/modules/vm | 8.0.5 |
+| <a name="module_vm"></a> [vm](#module\_vm) | git::https://github.com/BCochofelHomelab/homelab-proxmox-core.git//terraform/modules/vm | 8.1.0 |
 
 ## Resources
 

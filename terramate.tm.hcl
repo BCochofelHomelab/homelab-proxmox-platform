@@ -82,10 +82,11 @@ globals {
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEZGQwHOs8V9ndmLn3NuQXxuD0Ht4zaz+c6/WaEMAA6S bcochofel@NUC12WSHi7",
   ]
 
-  # homelab-proxmox-core's VM module, by tag (core's tags are X.Y.Z).
+  # homelab-proxmox-core's VM module, by tag (core's tags are X.Y.Z): 8.1.0
+  # adds data_disk, the optional second disk.
   vm_module = {
     source = "git::https://github.com/BCochofelHomelab/homelab-proxmox-core.git//terraform/modules/vm"
-    ref    = "8.0.5"
+    ref    = "8.1.0"
   }
 
   # The workspace module. Each workspace pins its own ref in workspace.yaml

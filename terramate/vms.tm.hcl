@@ -25,6 +25,9 @@ generate_hcl "_terramate_generated_vms.tf" {
       memory = each.value.memory
       disk   = each.value.disk
 
+      # Optional second disk (scsi1), created empty; null for none.
+      data_disk = each.value.data_disk
+
       ip_cidr        = "${each.value.ip}/${global.network.prefix}"
       gateway        = global.network.gateway
       network_bridge = global.network.bridge

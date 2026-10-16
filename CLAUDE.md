@@ -50,7 +50,9 @@ its source). Core's tags are `X.Y.Z` since `2.0.0` (older ones are
 `scripts/check_contract.py` (ids and namespaces).
 
 VM stacks hold only `local.vms` (`main.tf`); `terramate/vms.tm.hcl`
-generates core's module call (one disk: core's module has no data disk),
+generates core's module call (`data_disk`, core 8.1.0+: an empty scsi1
+disk, `/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi1`, which
+Ansible formats and mounts before Elasticsearch or Logstash writes data),
 `outputs.tf`, and tags every VM `platform`, `terraform` and its Ansible
 groups. Ansible's inventory is `ansible/inventory/platform.proxmox.yml`
 (community.proxmox, needs `requests` in `.venv`): VMs tagged `platform`,
