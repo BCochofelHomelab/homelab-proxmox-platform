@@ -38,6 +38,17 @@ everyone its change affects:
 Run order: `platform/elastic`, `apps/otel-demo` → Ansible → `shared/` →
 `agent-policies/` and `workspaces/`.
 
+Terramate: `terramate.tm.hcl` holds the globals (provider pins, core's
+template and VM module ref, the workspace module's source and default ref,
+Elastic endpoints) and imports `terramate/*.tm.hcl`, which generate each
+stack's backend (HCP workspace `platform-<path with / as ->`, execution
+mode Local) and its one provider by tag: `proxmox` or `elastic`, exactly
+one (an `assert` fails `generate` otherwise). Kibana and Fleet reuse
+`ELASTICSEARCH_API_KEY` (provider v0.16.6's config fallback, checked in
+its source). Core's tags are `X.Y.Z` since `2.0.0` (older ones are
+`vX.Y.Z`). Pre-commit runs `terramate fmt`, `terramate generate` and
+`scripts/check_contract.py` (ids and namespaces).
+
 ## Decisions that are deliberate (do not "fix" these)
 
 - **Namespace = workspace id**, the only coupling with the module. Ids match

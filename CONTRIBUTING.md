@@ -44,7 +44,8 @@ commitlint ([`commitlint.config.js`](commitlint.config.js)):
 
 `mise install` installs the git hooks, so `git commit` runs
 [`.pre-commit-config.yaml`](.pre-commit-config.yaml): file hygiene,
-markdownlint, OpenTofu (fmt, validate, terraform-docs, TFLint, Trivy,
+markdownlint, Terramate (fmt, generated code up to date), the workspace
+contract, OpenTofu (fmt, validate, terraform-docs, TFLint, Trivy,
 Checkov with homelab-proxmox-core's Proxmox policies), ansible-lint,
 ShellCheck, gitleaks, SOPS files encrypted, actionlint and zizmor on
 workflows, and commitlint. CI runs the same.
@@ -54,8 +55,13 @@ mise run lint      # every hook on every file
 mise run check     # the above + gitleaks on the full history (what CI runs)
 ```
 
-Three repo-specific rules the hooks enforce:
+Four repo-specific rules the hooks enforce:
 
+- **Namespace = workspace id.** A workspace is a folder under
+  `workspaces/`, and its name, the id, matches `^[a-z0-9_]{1,64}$` and
+  isn't `default`. Every namespace an agent policy or the ingest VM writes
+  data with names an existing workspace
+  ([`scripts/check_contract.py`](scripts/check_contract.py)).
 - **Every `check_mode: false`** says why it's safe on the same line
   (`check_mode: false # read-only: ...`): a dry-run runs it for real.
 - **A secret-named OpenTofu variable** (token, secret, password, hash,

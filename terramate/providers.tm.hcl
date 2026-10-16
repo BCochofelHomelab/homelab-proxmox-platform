@@ -1,0 +1,85 @@
+# Generated into every stack: its one provider, configured from the
+# globals, by tag. Imported by terramate.tm.hcl. Credentials come only from
+# the environment, through the `mise run tofu:*` tasks.
+
+# ---------------------------------------------------------------------------
+# "proxmox": the VM stacks. The token is terraform@pve!terraform
+# (TF_VAR_proxmox_api_token); the template is homelab-proxmox-core's.
+# ---------------------------------------------------------------------------
+
+generate_hcl "_terramate_generated_proxmox.tf" {
+  condition = tm_contains(terramate.stack.tags, "proxmox")
+
+  content {
+    provider "proxmox" {
+      endpoint  = global.proxmox.endpoint
+      api_token = var.proxmox_api_token
+      insecure  = global.proxmox.insecure
+
+      # Only some operations (file uploads) need SSH; cloning and
+      # cloud-init go through the API.
+      ssh {
+        agent    = true
+        username = "root"
+      }
+    }
+
+    # The template's VMID, looked up by name.
+    data "proxmox_virtual_environment_vms" "template" {
+      node_name = global.proxmox.node
+
+      filter {
+        name   = "name"
+        values = [global.proxmox.template]
+      }
+    }
+
+    locals {
+      target_node   = global.proxmox.node
+      template_vmid = one(data.proxmox_virtual_environment_vms.template.vms).vm_id
+    }
+  }
+}
+
+# Named variables.tf, as TFLint's terraform_standard_module_structure
+# expects; still generated.
+generate_hcl "variables.tf" {
+  condition = tm_contains(terramate.stack.tags, "proxmox")
+
+  content {
+    variable "proxmox_api_token" {
+      type        = string
+      description = "Proxmox API token, form user@realm!tokenid=secret (terraform@pve!terraform)"
+      sensitive   = true
+    }
+  }
+}
+
+# ---------------------------------------------------------------------------
+# "elastic": the Elastic content stacks. One Elasticsearch API key for
+# OpenTofu, ELASTICSEARCH_API_KEY, read from the environment; Kibana and
+# Fleet fall back to it.
+# ---------------------------------------------------------------------------
+
+generate_hcl "_terramate_generated_elasticstack.tf" {
+  condition = tm_contains(terramate.stack.tags, "elastic")
+
+  content {
+    provider "elasticstack" {
+      elasticsearch {
+        endpoints = global.elastic.es_endpoints
+        ca_file   = "${path.module}/${terramate.stack.path.to_root}/${global.elastic.ca_cert}"
+      }
+
+      kibana {
+        endpoints = [global.elastic.kibana_endpoint]
+        ca_certs  = ["${path.module}/${terramate.stack.path.to_root}/${global.elastic.ca_cert}"]
+      }
+
+      fleet {
+        endpoint = global.elastic.kibana_endpoint
+        ca_certs = ["${path.module}/${terramate.stack.path.to_root}/${global.elastic.ca_cert}"]
+      }
+    }
+  }
+}
