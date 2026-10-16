@@ -127,10 +127,13 @@ repos:
         entry: terramate fmt --detailed-exit-code
         files: \.tm\.hcl$
         pass_filenames: false
+      # `run` adds its own check, the one `mise run tofu:*` hits: no stack
+      # holds, by hand, a file that some generate block names (even one
+      # whose condition is false there). `generate` alone doesn't see it.
       - id: terramate_generate
         name: terramate generate is up to date
         language: system
-        entry: terramate generate --detailed-exit-code
+        entry: bash -c 'terramate generate --detailed-exit-code && terramate run --quiet -- true'
         always_run: true
         pass_filenames: false
 
