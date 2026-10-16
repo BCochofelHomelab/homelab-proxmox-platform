@@ -87,6 +87,20 @@ the contract check. The inventory reaches Proxmox through core's Caddy
 Agents on the other VMs, `remote_monitoring_user` and the agents' client
 certificate for Logstash come with `agent-policies/` (PR 10).
 
+Shared stacks (tag `elastic` + `shared`): `shared/security` (roles
+`platform-admin`, `platform-viewer`: native users, no SSO; no users or API
+keys managed here), `shared/data` (ILM `platform-30d` via `logs|metrics|
+traces@custom`, which the OTel templates compose too, checked in ES
+v9.5.4's source), `shared/fleet` (packages `fleet_server` 1.6.1, `system`
+3.0.0; Fleet Server host; `fleet-default-output` imported; policy
+`fleet-server-policy` in namespace `platform`). The Logstash output and
+the agents' client certificate come with the first host group (PR 10),
+made default only after Fleet Server's policy has its integration (Basic:
+no per-policy outputs). Order: `shared/data` and `shared/security` after
+`/platform/elastic`, `shared/fleet` after `/shared/data`. Elastic stacks
+get a comment-only generated `variables.tf` (TFLint). The OpenTofu API key
+is the human's (`ELASTICSEARCH_API_KEY` in `homelab.yaml`).
+
 Releases: semantic-release as core's (`.releaserc.js`, `package.json`,
 `package-lock.json` copied from core; `release.yml` is the human's to
 commit), tags `X.Y.Z` with no `v`, first release `1.0.0`.

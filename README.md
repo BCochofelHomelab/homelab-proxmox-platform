@@ -50,8 +50,9 @@ Ansible, in [`ansible/`](ansible/), configures the VMs between the two.
 
 ## Status
 
-This repository is being set up: the VMs and Ansible's roles are in; the
-Elastic content (`shared/`, `agent-policies/`, `workspaces/`) comes next.
+This repository is being set up: the VMs, Ansible's roles and the shared
+Elastic content (`shared/`) are in; host groups' agent policies
+(`agent-policies/`) and the workspaces (`workspaces/`) come next.
 
 ## Getting started
 
