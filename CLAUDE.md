@@ -189,3 +189,10 @@ mise run check               # lint + gitleaks on the full history (what CI runs
 mise run check:boundary      # the agent's boundary holds
 mise run sops -- <args>      # yours only: sops with your key
 ```
+
+`docs/SETUP.md` is the human's record of everything configured by hand
+(Proxmox, HCP, Elastic, GitHub, secret files), in rebuild order: a pull
+request that adds or changes such a step updates it too, and lists the
+step in its description. Its *Open items* hold proposals not yet built
+(the agent's read-only Elasticsearch MCP server, decided: standalone
+v0.4.6, free tier).
