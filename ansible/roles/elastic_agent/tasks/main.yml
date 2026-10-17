@@ -84,8 +84,16 @@
 
 # -- Install and/or enroll ------------------------------------------------------------
 
+# A dry-run (--check) downloads nothing and gets no enrollment token: it
+# reports the install or enrollment as a change instead.
+- name: Report the enrollment a real run would do
+  ansible.builtin.debug:
+    msg: "Check mode: the agent would be {{ 'installed and ' if _agent_install else '' }}enrolled into {{ elastic_agent_policy_id }}."
+  changed_when: true
+  when: _agent_enroll and ansible_check_mode
+
 - name: Install and enroll into {{ elastic_agent_policy_id }}
-  when: _agent_enroll
+  when: _agent_enroll and not ansible_check_mode
   block:
     - name: Read the policy's enrollment token
       ansible.builtin.uri:

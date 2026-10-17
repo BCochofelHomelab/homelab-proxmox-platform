@@ -11,5 +11,9 @@ creation_rules:
   # in a dry-run too.
   - path_regex: (^|/)ansible/pki/[^/]+\.sops$
     age: age1fucsvstpr082zemctfpjn2xkwq86thvlzan4tp9fyvg2q0rnnemshw690m,age1f0qs93yyg2mxxyxhft2fdzdda3nfx5phy3h2gmzfslj2k4rpjg8qrps26r
+  # The dry-run's own credentials (ci/dry-run.sops.yaml) and the automation
+  # SSH key (ci/ssh_ed25519.key.sops): what mise run ci:plan and ci:check use.
+  - path_regex: (^|/)ci/[^/]+\.sops(\.ya?ml)?$
+    age: age1fucsvstpr082zemctfpjn2xkwq86thvlzan4tp9fyvg2q0rnnemshw690m,age1f0qs93yyg2mxxyxhft2fdzdda3nfx5phy3h2gmzfslj2k4rpjg8qrps26r
   - path_regex: \.sops\.ya?ml$
     age: age1fucsvstpr082zemctfpjn2xkwq86thvlzan4tp9fyvg2q0rnnemshw690m
