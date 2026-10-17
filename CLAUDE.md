@@ -196,3 +196,8 @@ request that adds or changes such a step updates it too, and lists the
 step in its description. Its *Open items* hold proposals not yet built
 (the agent's read-only Elasticsearch MCP server, decided: standalone
 v0.4.6, free tier).
+
+`mise run check:telemetry` (the human's, denied to the agent: homelab.yaml)
+confirms every VM in Ansible's inventory has an online agent on its
+policy and recent `metrics-system.*-*` (`scripts/check_telemetry.py`);
+a host enrolled from outside the platform is a `note`, not a failure.

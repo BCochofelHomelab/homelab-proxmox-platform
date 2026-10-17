@@ -226,9 +226,31 @@ Then your own Kibana user (*Stack Management → Users*), so `elastic`
 stays for setup and recovery: `platform-admin` covers every space, or the
 workspaces' `workspace-<id>-editor` / `-viewer` roles.
 
-*Check:* five new workspaces *Local*; the health check waits until every
-agent is online in Fleet; *Kibana → Fleet → Agents*: six agents, all
-Healthy; *Stack Monitoring*: the cluster's 3 nodes, Kibana and Logstash.
+*Check:* five new workspaces *Local*, and every VM reports its
+telemetry:
+
+```bash
+mise run check:telemetry
+```
+
+Two `ok` lines per VM (six VMs, from Ansible's inventory, so a VM added
+later is checked too): its agent is online in Fleet on the policy its
+`group_vars` name, and its host metrics (`metrics-system.*-*`) reached
+Elasticsearch in the last 10 minutes, which proves the whole path (agent,
+Logstash, Elasticsearch), not only the agent. An agent enrolled from
+outside the platform (core's hosts, later) shows as a `note`. It's
+read-only, with your inventory token and OpenTofu's key. In Kibana:
+*Fleet → Agents*, six agents Healthy; *Stack Monitoring*, the cluster's
+3 nodes, Kibana and Logstash.
+
+A `FAIL` names what's missing:
+
+- *no online agent*: `offline` or `unhealthy` on the right policy, see
+  the agent in *Fleet → Agents* (its last check-in, the unit that
+  fails); on another policy, the VM's `elastic_agent_policy_id`; *no
+  agent*, run `mise run ansible:site -- --limit <vm>`, which enrolls it.
+- *no host metrics* with the agent online: the path after the agent,
+  Logstash (`ingest`) first, the health check's Logstash play.
 
 ## Stage 9. The AI agent (optional)
 
@@ -338,6 +360,7 @@ From your clone, on `main`:
 mise run check            # what CI runs
 mise run tofu:plan        # every stack: No changes
 mise run ansible:site     # failed=0 everywhere; every agent online in Fleet
+mise run check:telemetry  # every VM: agent online, metrics arriving
 mise run ci:plan          # every stack: No changes (stage 10)
 mise run ci:check         # failed=0 (stage 10)
 ```
