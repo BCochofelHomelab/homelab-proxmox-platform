@@ -105,11 +105,19 @@
   become: true
   register: _edot_installed
 
+# A dry-run (--check) downloads nothing, so it can't verify or unpack:
+# it reports the install as a change instead.
+- name: Report the install a real run would do
+  ansible.builtin.debug:
+    msg: "Check mode: {{ edot_tarball_name }} would be downloaded, verified and unpacked into {{ edot_install_dir }}."
+  changed_when: true
+  when: not _edot_installed.stat.exists and ansible_check_mode
+
 # Checked like every agent install: Elastic's key is the keyring
 # elastic_repo installed (verified by fingerprint), then the tarball's
 # signature and SHA-512.
 - name: Download, verify and unpack {{ edot_tarball_name }}
-  when: not _edot_installed.stat.exists
+  when: not _edot_installed.stat.exists and not ansible_check_mode
   block:
     - name: Create a working directory
       ansible.builtin.tempfile:
@@ -176,6 +184,8 @@
     src: "{{ edot_install_dir }}"
     dest: "{{ edot_base_dir }}/current"
     state: link
+    # In a dry-run the new version isn't unpacked: the link is still planned.
+    force: "{{ ansible_check_mode }}"
   become: true
   notify: Restart the EDOT Collector
 
