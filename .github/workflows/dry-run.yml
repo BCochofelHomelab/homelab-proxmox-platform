@@ -1,0 +1,221 @@
+---
+# Dry-runs a pull request against the live platform, as homelab-proxmox-core's
+# dry-run.yml does: `tofu plan` of every stack when it changes one (or what
+# they read), `ansible-playbook --check --diff` when it changes ansible/, on
+# core's self-hosted runner runner01, as the plan-scoped `ci` identity.
+#
+# The boundary is the `dry-run` environment: the jobs that use the runner
+# wait for its required reviewer (sre-lead), and only they can read its one
+# secret, CI_AGE_KEY. A pull request can edit this file, so nothing in it is
+# the boundary. Never `pull_request_target`; a fork's pull request never
+# reaches the runner. Only each stack's plan line and the Ansible recap reach
+# the (public) log and a comment on the pull request; the full output is an
+# artifact encrypted to the human and ai-agent age keys.
+name: Dry-run
+
+on:
+  pull_request:
+
+permissions: {}
+
+# One dry-run per pull request: a new push cancels the previous one, even
+# while it waits for approval. runner01 is a single runner, shared with
+# core, so jobs never overlap on the hosts; ci:plan waits for state locks.
+concurrency:
+  group: dry-run-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  # Install exactly what mise.lock records, and skip mise.toml's bootstrap
+  # (git hooks, TFLint plugins...): each job installs only what it runs.
+  MISE_LOCKED: "1"
+  MISE_SKIP_BOOTSTRAP: "1"
+  # Who can read the full output (`age -r`): the human, and the AI agent,
+  # which downloads the artifact with its read-only token.
+  OUTPUT_RECIPIENT_HUMAN: age1fucsvstpr082zemctfpjn2xkwq86thvlzan4tp9fyvg2q0rnnemshw690m
+  OUTPUT_RECIPIENT_AI_AGENT: age1hy2pqyv75m0y7uyvqp73mmazdy6ldwc950d5jzlsntthpl3l4uxqg0u076
+
+jobs:
+  changes:
+    name: What changed
+    # Same-repository pull requests only: a fork's never reaches the runner.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: read # gh pr view: the pull request's file list
+    outputs:
+      plan: ${{ steps.files.outputs.plan }}
+      check: ${{ steps.files.outputs.check }}
+    steps:
+      - name: List the pull request's files
+        id: files
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          files=$(gh pr view "$PR" --repo "$REPO" --json files --jq '.files[].path')
+          # The dry-run tooling itself, this workflow included, counts for both jobs.
+          shared='^(mise\.toml|mise\.lock|\.sops\.yaml|ci/|\.github/workflows/dry-run\.yml$)'
+          # Every stack, what generates them, and the files the Elastic stacks
+          # read at plan time (the CA, the agents' client key, elastic.sops.yaml).
+          stacks='^(platform|apps|shared|agent-policies|workspaces|terramate)/|^terramate\.tm\.hcl$|^ansible/pki/|^ansible/inventory/group_vars/elastic\.sops\.yaml$'
+          if grep -qE "$stacks|$shared" <<<"$files"; then echo plan=true; else echo plan=false; fi >>"$GITHUB_OUTPUT"
+          if grep -qE "^ansible/|$shared" <<<"$files"; then echo check=true; else echo check=false; fi >>"$GITHUB_OUTPUT"
+
+  plan:
+    name: tofu plan
+    needs: changes
+    if: needs.changes.outputs.plan == 'true'
+    runs-on: [self-hosted, homelab]
+    environment: dry-run
+    timeout-minutes: 45
+    permissions:
+      contents: read # checkout
+    outputs:
+      summary: ${{ steps.plan.outputs.summary }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install OpenTofu, Terramate, SOPS and age (mise)
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        with:
+          version: "2026.10.9" # mise itself: the same as .devcontainer/post-create.sh
+          install_args: opentofu terramate sops age
+
+      - name: Plan every stack as ci
+        id: plan
+        env:
+          SOPS_AGE_KEY: ${{ secrets.CI_AGE_KEY }}
+        run: |
+          out="$RUNNER_TEMP/plan.txt"
+          rc=0
+          mise run ci:plan >"$out" 2>&1 || rc=$?
+          # One line per stack, in run order: its plan line, or that it failed.
+          summary=$(awk '
+            /^terramate: Entering stack in / { s = $NF; order[++n] = s }
+            /^(Plan:|No changes\.)/ { line = $0; sub(/ Your infrastructure.*/, "", line); r[s] = line }
+            END { for (i = 1; i <= n; i++) print order[i] ": " (order[i] in r ? r[order[i]] : "failed, see the encrypted artifact") }' "$out")
+          [ -n "$summary" ] || summary="Failed (exit $rc) before any stack: see the encrypted artifact."
+          fence='```'
+          printf '## tofu plan\n%stext\n%s\n%s\n' "$fence" "$summary" "$fence" | tee -a "$GITHUB_STEP_SUMMARY"
+          { echo "summary<<SUMMARY_EOF"; echo "$summary"; echo "SUMMARY_EOF"; } >>"$GITHUB_OUTPUT"
+          age -r "$OUTPUT_RECIPIENT_HUMAN" -r "$OUTPUT_RECIPIENT_AI_AGENT" -o "$out.age" "$out"
+          rm -f "$out"
+          exit "$rc"
+
+      - name: Upload the encrypted plan output
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: plan
+          path: ${{ runner.temp }}/plan.txt.age
+          retention-days: 7
+          if-no-files-found: ignore
+
+  check:
+    name: ansible-playbook --check
+    needs: changes
+    if: needs.changes.outputs.check == 'true'
+    runs-on: [self-hosted, homelab]
+    environment: dry-run
+    timeout-minutes: 45
+    permissions:
+      contents: read # checkout
+    outputs:
+      recap: ${{ steps.check.outputs.recap }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install SOPS, age, Python and uv (mise)
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        with:
+          version: "2026.10.9" # mise itself: the same as .devcontainer/post-create.sh
+          install_args: sops age python uv
+
+      - name: Install Ansible and its collections (.venv)
+        run: mise run setup:ansible
+
+      - name: Check as ci
+        id: check
+        env:
+          SOPS_AGE_KEY: ${{ secrets.CI_AGE_KEY }}
+        run: |
+          out="$RUNNER_TEMP/check.txt"
+          rc=0
+          mise run ci:check >"$out" 2>&1 || rc=$?
+          # One line per host; no pipefail in run: steps, so test the result.
+          recap=$(sed -n '/^PLAY RECAP/,$p' "$out" | grep -E '^[A-Za-z0-9_.-]+ +: ' | tr -s ' ')
+          [ -n "$recap" ] || recap="No recap: see the encrypted artifact."
+          fence='```'
+          printf '## ansible-playbook --check\n%stext\n%s\n%s\n' "$fence" "$recap" "$fence" | tee -a "$GITHUB_STEP_SUMMARY"
+          { echo "recap<<RECAP_EOF"; echo "$recap"; echo "RECAP_EOF"; } >>"$GITHUB_OUTPUT"
+          age -r "$OUTPUT_RECIPIENT_HUMAN" -r "$OUTPUT_RECIPIENT_AI_AGENT" -o "$out.age" "$out"
+          rm -f "$out"
+          exit "$rc"
+
+      - name: Upload the encrypted check output
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: check
+          path: ${{ runner.temp }}/check.txt.age
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # Posts the two summaries above on the pull request, in one comment that
+  # each run updates. On a GitHub-hosted runner, with no checkout: none of
+  # the pull request's code runs where this job's write token is.
+  report:
+    name: Comment on the pull request
+    needs: [changes, plan, check]
+    if: >-
+      always() && needs.changes.result == 'success'
+      && (needs.changes.outputs.plan == 'true' || needs.changes.outputs.check == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write # create or update the comment
+    steps:
+      - name: Create or update the dry-run comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          PLAN_RESULT: ${{ needs.plan.result }}
+          PLAN_SUMMARY: ${{ needs.plan.outputs.summary }}
+          CHECK_RESULT: ${{ needs.check.result }}
+          CHECK_RECAP: ${{ needs.check.outputs.recap }}
+        run: |
+          marker='<!-- dry-run -->'
+          fence='```'
+          body="$RUNNER_TEMP/comment.md"
+          {
+            echo "$marker"
+            echo "### Dry-run of ${SHA:0:7}"
+            echo
+            echo "**tofu plan** ($PLAN_RESULT):"
+            echo "${fence}text"
+            echo "${PLAN_SUMMARY:-not run}"
+            echo "$fence"
+            echo
+            echo "**ansible-playbook --check** ($CHECK_RESULT):"
+            echo "${fence}text"
+            echo "${CHECK_RECAP:-not run}"
+            echo "$fence"
+            echo
+            echo "[The run]($RUN_URL): the full output is its encrypted artifacts (docs/SETUP.md)."
+          } >"$body"
+          id=$(gh api "repos/$REPO/issues/$PR/comments" --paginate \
+            --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"$marker\"))) | .id" | head -1)
+          if [ -n "$id" ]; then gh api -X PATCH "repos/$REPO/issues/comments/$id" -F "body=@$body" >/dev/null
+          else gh api -X POST "repos/$REPO/issues/$PR/comments" -F "body=@$body" >/dev/null; fi
