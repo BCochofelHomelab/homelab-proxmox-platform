@@ -320,13 +320,17 @@ site() {
 # needs VM.Config.Disk, a write privilege ci@pve!plan lacks) and never
 # saving a plan. --continue-on-error plans every stack and still fails the
 # run if one failed; `terramate: Entering stack in /<path>` names each.
+# --disable-safeguards=git-out-of-sync: the runner checks out only the pull
+# request's merge commit (main already merged in), with no origin/main to
+# compare against, and Terramate refuses ("unable to reach remote default
+# branch"). terramate.tm.hcl's other disabled safeguards still apply.
 [tasks."ci:plan"]
 description = "Plan every stack as ci (ci/dry-run.sops.yaml with the ci key), without refreshing; never saves a plan"
 dir = "{{config_root}}"
 shell = "bash -c"
 run = '''
 [ -n "$SOPS_AGE_KEY" ] || export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/ci.txt"
-exec sops exec-env ci/dry-run.sops.yaml 'terramate run --continue-on-error -- sh -c "tofu init -input=false -no-color >/dev/null && tofu plan -refresh=false -input=false -no-color -lock-timeout=5m"'
+exec sops exec-env ci/dry-run.sops.yaml 'terramate run --continue-on-error --disable-safeguards=git-out-of-sync -- sh -c "tofu init -input=false -no-color >/dev/null && tofu plan -refresh=false -input=false -no-color -lock-timeout=5m"'
 '''
 
 # site.yml --check --diff on every platform VM, as ci: the automation SSH
