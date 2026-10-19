@@ -119,5 +119,9 @@ VM's Elastic Agent its host group's `agent-policies/<group>`: an
 `ansible:site` before those exist skips them with a message, the one after
 sets them up.
 
+Building it from nothing, or rebuilding it, in order, with everything
+configured by hand (Proxmox, HCP Terraform, Elastic, GitHub, the secret
+files): [`docs/SETUP.md`](docs/SETUP.md).
+
 How a change flows, and the rules it follows:
 [`CONTRIBUTING.md`](CONTRIBUTING.md).
