@@ -1,0 +1,17 @@
+---
+# Host group proxmox (terramate/agent-policy.tm.hcl): the Proxmox VE host,
+# pve1. Host logs and metrics (each VM is a kvm process). Its agent is
+# installed and enrolled by homelab-proxmox-core's Ansible, with this
+# policy's enrollment token.
+name: Proxmox
+description: The Proxmox VE host, pve1
+# The hosts enrolled into it, by hostname, from outside this repo's
+# Ansible: mise run check:telemetry checks each one's agent and metrics.
+hosts: [pve1]
+# The agents' own logs and metrics: the platform runs the agents.
+namespace: platform
+integrations:
+  - name: system
+    package: system
+    namespace: core
+    description: Host logs and metrics

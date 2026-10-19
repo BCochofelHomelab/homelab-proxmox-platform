@@ -73,6 +73,7 @@ globals {
     elasticsearch = "1.23.3"
     kibana        = "2.9.0"
     logstash      = "2.11.3"
+    docker        = "2.16.0"
   }
 
   proxmox = {

@@ -1,0 +1,25 @@
+---
+# The core workspace (terramate/workspace.tm.hcl): homelab-proxmox-core's
+# hosts, the edge (Caddy, CoreDNS, Pi-hole), its dry-run runner and the
+# Proxmox VE host. Owner: sre-lead. Namespace = workspace id: "core".
+display_name: Core
+description: >-
+  homelab-proxmox-core: the edge VMs (proxy: Caddy; server01: CoreDNS,
+  Pi-hole) and their containers, the dry-run runner (runner01) and the
+  Proxmox VE host (pve1). Owner: sre-lead.
+color: "#E7664C"
+data_types: [logs, metrics]
+
+# Native users (no SSO in the homelab): give them the workspace's roles
+# (outputs) in Kibana. No groups, so no role mappings.
+access: {}
+
+connectors:
+  server_log:
+    type: .server-log
+    name: Server log
+alert_actions:
+  - connector: server_log
+    params:
+      level: warn
+      message: "[core] {{rule.name}}: {{context.reason}}{{context.message}}"

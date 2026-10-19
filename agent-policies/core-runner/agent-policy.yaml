@@ -1,0 +1,18 @@
+---
+# Host group core-runner (terramate/agent-policy.tm.hcl):
+# homelab-proxmox-core's dry-run runner, runner01. Host logs and metrics
+# only: Docker is masked there, by design. Its agent is installed and
+# enrolled by homelab-proxmox-core's Ansible, with this policy's enrollment
+# token.
+name: Homelab core runner
+description: "homelab-proxmox-core's dry-run CI runner, runner01"
+# The hosts enrolled into it, by hostname, from outside this repo's
+# Ansible: mise run check:telemetry checks each one's agent and metrics.
+hosts: [runner01]
+# The agents' own logs and metrics: the platform runs the agents.
+namespace: platform
+integrations:
+  - name: system
+    package: system
+    namespace: core
+    description: Host logs and metrics

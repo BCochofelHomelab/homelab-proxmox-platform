@@ -18,10 +18,7 @@ output "outputs" {
 
 output "packages" {
   value = {
-    for package in concat(
-      [elasticstack_fleet_integration.fleet_server, elasticstack_fleet_integration.system],
-      values(elasticstack_fleet_integration.monitoring),
-    ) : package.name => package.version
+    for name, package in elasticstack_fleet_integration.packages : name => package.version
   }
   description = "Installed integration packages: name => version"
 }

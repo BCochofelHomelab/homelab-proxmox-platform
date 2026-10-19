@@ -1,0 +1,23 @@
+---
+# Host group core (terramate/agent-policy.tm.hcl): homelab-proxmox-core's
+# edge VMs, proxy (Caddy) and server01 (CoreDNS, Pi-hole), all in Docker
+# Compose. Their agents are installed and enrolled by homelab-proxmox-core's
+# Ansible, with this policy's enrollment token.
+name: Homelab core
+description: "homelab-proxmox-core's edge VMs: proxy (Caddy), server01 (CoreDNS, Pi-hole)"
+# The hosts enrolled into it, by hostname, from outside this repo's
+# Ansible: mise run check:telemetry checks each one's agent and metrics.
+hosts: [proxy, server01]
+# The agents' own logs and metrics: the platform runs the agents.
+namespace: platform
+integrations:
+  - name: system
+    package: system
+    namespace: core
+    description: Host logs and metrics
+  # Every container's metrics (the Docker socket) and logs
+  # (/var/lib/docker/containers): the package's defaults.
+  - name: docker
+    package: docker
+    namespace: core
+    description: "Containers' metrics and logs: Caddy, CoreDNS, Pi-hole"
