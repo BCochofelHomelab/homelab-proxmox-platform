@@ -1,6 +1,6 @@
 ---
 # elastic_agent_policy_id: group_vars (the host group's folder name under
-# agent-policies/). fleet_url: group_vars/all.yml.
+# stacks/agent-policies/). fleet_url: group_vars/all.yml.
 elastic_agent_ca: /etc/elastic-agent/ca.crt
 elastic_agent_kibana_url: "https://{{ hostvars[groups['kibana_server'][0]].ansible_host }}:5601"
 # Fleet's API is called as elastic, whose password only the Elastic VMs

@@ -1,4 +1,4 @@
-# Generated into every stack tagged "agent-policy" (agent-policies/<group>/):
+# Generated into every stack tagged "agent-policy" (stacks/agent-policies/<group>/):
 # one host group's Fleet agent policy and its integrations, from the
 # group's agent-policy.yaml. The folder holds data; this is the code, the
 # same for every group. Imported by terramate.tm.hcl.
@@ -9,7 +9,7 @@
 #   namespace:   the workspace the agents' own logs and metrics belong to
 #   integrations:
 #     - name:      unique within the group ([a-z0-9-])
-#       package:   a key of global.fleet_packages (installed by shared/fleet)
+#       package:   a key of global.fleet_packages (installed by stacks/shared/fleet)
 #       namespace: the workspace this integration's data belongs to
 #       description: optional
 #       inputs:    optional, by input id (<policy template>-<input type>,
@@ -56,16 +56,16 @@ generate_hcl "_terramate_generated_agent_policy.tf" {
       }
     }
 
-    # Read only for `{secret: ...}` values (agent-policies/agent-policies.tm.hcl).
+    # Read only for `{secret: ...}` values (stacks/agent-policies/agent-policies.tm.hcl).
     data "sops_file" "secrets" {
-      source_file = "${path.module}/../../ansible/inventory/group_vars/elastic.sops.yaml"
+      source_file = "${path.module}/${terramate.stack.path.to_root}/ansible/inventory/group_vars/elastic.sops.yaml"
     }
 
     resource "elasticstack_fleet_agent_policy" "this" {
       policy_id       = local.policy_id
       name            = local.spec.name
       namespace       = local.spec.namespace
-      description     = "${local.spec.description} (homelab-proxmox-platform, ${terramate.stack.path.relative})"
+      description     = "${local.spec.description} (homelab-proxmox-platform, ${global.stack_path})"
       monitor_logs    = true
       monitor_metrics = true
     }

@@ -175,7 +175,7 @@
   delay: "{{ kibana_status_delay }}"
 
 # Fleet's setup: creates its default Elasticsearch output
-# (fleet-default-output), which the shared/fleet stack
+# (fleet-default-output), which the stacks/shared/fleet stack
 # adopts. Idempotent.
 - name: Run Fleet's setup
   ansible.builtin.uri:

@@ -28,15 +28,22 @@ everyone its change affects:
 
 | Path | Scope |
 | --- | --- |
-| `platform/elastic/` | The five Elastic VMs (core's VM module and template, by tag) |
-| `apps/otel-demo/` | The OTel demo VM |
-| `shared/security`, `shared/data`, `shared/fleet` | Everyone: roles and API keys; ILM, templates, ingest pipelines; Fleet outputs, Fleet Server host, integration packages |
-| `agent-policies/<group>/` | One host group: its agent policy and integrations (`agent-policy.yaml`) |
-| `workspaces/<id>/` | One workspace, through `terraform-elasticstack-workspace`, pinned per workspace (`workspace.yaml`) |
+| `stacks/platform/elastic/` | The five Elastic VMs (core's VM module and template, by tag) |
+| `stacks/apps/otel-demo/` | The OTel demo VM |
+| `stacks/shared/security`, `stacks/shared/data`, `stacks/shared/fleet` | Everyone: roles and API keys; ILM, templates, ingest pipelines; Fleet outputs, Fleet Server host, integration packages |
+| `stacks/agent-policies/<group>/` | One host group: its agent policy and integrations (`agent-policy.yaml`) |
+| `stacks/workspaces/<id>/` | One workspace, through `terraform-elasticstack-workspace`, pinned per workspace (`workspace.yaml`) |
 | `ansible/` | Configures the VMs; not a stack |
 
-Run order: `platform/elastic`, `apps/otel-demo` → Ansible → `shared/` →
-`agent-policies/` and `workspaces/`.
+Run order: `stacks/platform/elastic`, `stacks/apps/otel-demo` → Ansible → `stacks/shared/` →
+`stacks/agent-policies/` and `stacks/workspaces/`.
+
+Every stack is under `stacks/` (moved there on 2026-10-19). Names and
+descriptions use `global.stack_path`, the path without `stacks/`
+(`shared/fleet`), never `terramate.stack.path.relative`: HCP workspaces
+(`platform-shared-fleet`), VM and agent-policy descriptions stayed as they
+were before the move. A path from a stack to the repo root is
+`terramate.stack.path.to_root` in generated code, `../../../` by hand.
 
 Terramate: `terramate.tm.hcl` holds the globals (provider pins, core's
 template and VM module ref, the workspace module's source and default ref,
@@ -79,32 +86,32 @@ every Elastic VM, in the inventory file), `kibana_server.sops.yaml`
 (`kibana_system_password`, `kibana_encryption_key`), `logstash.sops.yaml`
 (`logstash_writer_password`), `edot_gateway.sops.yaml`
 (`edot_writer_password`). Fleet Server ends its host's play (`meta:
-end_host`, with a message) until `shared/fleet` has created
+end_host`, with a message) until `stacks/shared/fleet` has created
 `fleet-server-policy`. The demo's namespace: `OTEL_RESOURCE_ATTRIBUTES=
 data_stream.namespace=otel_demo` on its collector container (upstream's
 `resource_detection` env detector, first in every pipeline); it's in the
-role's defaults, not group_vars, until `workspaces/otel_demo` exists for
+role's defaults, not group_vars, until `stacks/workspaces/otel_demo` exists for
 the contract check. The inventory reaches Proxmox through core's Caddy
 (`https://pve1.homelab.bcochofel.com`, Let's Encrypt, verified).
-Stack monitoring: `elasticsearch` (agent-policies/elasticsearch, HTTPS to
+Stack monitoring: `elasticsearch` (stacks/agent-policies/elasticsearch, HTTPS to
 localhost, scope node), `kibana` (on `fleet-server-policy` in
-`shared/fleet`: Kibana listens on 192.168.68.33, not localhost) and
-`logstash` (agent-policies/ingest: its `logstash/metrics` stack-monitoring
+`stacks/shared/fleet`: Kibana listens on 192.168.68.33, not localhost) and
+`logstash` (stacks/agent-policies/ingest: its `logstash/metrics` stack-monitoring
 streams are off by default) log in as `remote_monitoring_user`, whose
 password is `remote_monitoring_password` in `group_vars/elastic.sops.yaml`:
 Ansible sets it (10-elasticsearch.yml), OpenTofu reads the same file
 (`sops` provider; in agent-policy.yaml as `{secret: <key>}`, every
-agent-policy stack gets the provider from `agent-policies/agent-policies.tm.hcl`).
+agent-policy stack gets the provider from `stacks/agent-policies/agent-policies.tm.hcl`).
 
-Shared stacks (tag `elastic` + `shared`; `shared/fleet` also `fleet`): `shared/security` (roles
+Shared stacks (tag `elastic` + `shared`; `stacks/shared/fleet` also `fleet`): `stacks/shared/security` (roles
 `platform-admin`, `platform-viewer`: native users, no SSO; no users or API
-keys managed here), `shared/data` (ILM `platform-30d` via `logs|metrics|
+keys managed here), `stacks/shared/data` (ILM `platform-30d` via `logs|metrics|
 traces@custom`, which the OTel templates compose too, checked in ES
-v9.5.4's source), `shared/fleet` (packages `fleet_server` 1.6.1, `system`
+v9.5.4's source), `stacks/shared/fleet` (packages `fleet_server` 1.6.1, `system`
 3.0.0; Fleet Server host; `fleet-default-output` imported; policy
 `fleet-server-policy` in namespace `platform`; the Logstash output, see
-below). Order: `shared/data` and `shared/security` after
-`/platform/elastic`, `shared/fleet` after `/shared/data`. Elastic stacks
+below). Order: `stacks/shared/data` and `stacks/shared/security` after
+`/stacks/platform/elastic`, `stacks/shared/fleet` after `/stacks/shared/data`. Elastic stacks
 get a comment-only generated `variables.tf` (TFLint). The OpenTofu API key
 is the human's (`ELASTICSEARCH_API_KEY` in `homelab.yaml`), scoped in
 `docs/ELASTIC-API-KEY.md` (monitor, manage_ilm, manage_index_templates,
@@ -113,13 +120,13 @@ spaces need): a resource type needing another privilege updates that
 page's table and request. Rules created with it keep it (Kibana 9.5.4),
 so rotating it runs `scripts/elastic_rekey_rules.py`.
 
-Agent policies and workspaces (PR 10): `agent-policies/<group>/`
+Agent policies and workspaces (PR 10): `stacks/agent-policies/<group>/`
 (`elasticsearch`, `ingest`, `otel-demo`; and core's hosts: `core` for proxy
 and server01 with system + docker, `core-runner` for runner01 with system
 only since Docker is masked there, `proxmox` for pve1, all into workspace
 `core`; core's Ansible installs and enrolls those agents; tags `elastic`, `agent-policy`,
 `fleet`; after `/shared/fleet`) hold `agent-policy.yaml`;
-`workspaces/<id>/` (`platform`, `otel_demo`, `core`; tags `elastic`, `workspace`;
+`stacks/workspaces/<id>/` (`platform`, `otel_demo`, `core`; tags `elastic`, `workspace`;
 after `tag:shared`) hold `workspace.yaml`, optional `dashboards/`,
 `rules/`. Both read their YAML at plan time (`yamldecode(file())`), so
 `tofu validate` catches YAML errors; only `module_ref` is read by
@@ -128,10 +135,10 @@ in every stack, hence `tm_try`). Their `main.tf` and `outputs.tf` are
 hand-written (TFLint wants them, and generating a name other stacks write
 by hand breaks `terramate run`). Package versions: `global.fleet_packages`,
 generated as `local.fleet_packages` into stacks tagged `fleet`;
-`shared/fleet` installs every one (`elasticstack_fleet_integration.packages`). The
+`stacks/shared/fleet` installs every one (`elasticstack_fleet_integration.packages`). The
 platform workspace's `unknown_namespace` rule is generated from
 `terramate.stacks.list` (every workspace id; Fleet Server's `fleet_server.*`
-datasets excluded). `shared/fleet` has the Logstash output (default, after
+datasets excluded). `stacks/shared/fleet` has the Logstash output (default, after
 Fleet Server's integration; Fleet keeps Elasticsearch for the Fleet Server
 policy) with the agents' shared client certificate (`mise run
 pki:agent-client`, the human's; key read by the `carlpett/sops` provider,
@@ -171,7 +178,7 @@ commit), tags `X.Y.Z` with no `v`, first release `1.0.0`.
   and `otel_demo`.
 - **One Elastic API key for OpenTofu**, in `~/.secrets/homelab.yaml`: one
   person, and each stack's separate state already isolates changes.
-- **Two VM stacks** (`platform/elastic`, `apps/otel-demo`), not one per role.
+- **Two VM stacks** (`stacks/platform/elastic`, `stacks/apps/otel-demo`), not one per role.
 - **The VM template and VM module are homelab-proxmox-core's**, consumed by
   tag: one template to patch.
 - **Ansible's inventory is Proxmox's dynamic inventory, with its own

@@ -1,5 +1,5 @@
 ---
-# Runs Fleet Server on this host, in the agent policy shared/fleet creates.
+# Runs Fleet Server on this host, in the agent policy stacks/shared/fleet creates.
 #
 # homelab-proxmox-core's template has no Elastic Agent, and Fleet Server
 # needs the agent's "servers" flavor, chosen at install time
@@ -9,11 +9,11 @@
 # one is re-enrolled.
 #
 # Run order: Ansible runs before the Elastic stacks (the stacks need
-# Elasticsearch up). Until shared/fleet has created the policy, this host is
+# Elasticsearch up). Until stacks/shared/fleet has created the policy, this host is
 # skipped with a message; run `mise run ansible:site` again after applying
-# shared/fleet.
+# stacks/shared/fleet.
 
-- name: Check the Fleet Server policy exists (shared/fleet)
+- name: Check the Fleet Server policy exists (stacks/shared/fleet)
   ansible.builtin.uri:
     url: "{{ fleet_server_kibana_url }}/api/fleet/agent_policies/{{ fleet_server_policy_id }}"
     ca_path: "{{ elastic_ca_cert }}"
@@ -26,14 +26,14 @@
   register: _fleet_server_policy
   check_mode: false # read-only: GET the agent policy
 
-- name: Skip Fleet Server until shared/fleet has created its policy
+- name: Skip Fleet Server until stacks/shared/fleet has created its policy
   when: _fleet_server_policy.status == 404
   block:
     - name: Say why Fleet Server is skipped
       ansible.builtin.debug:
         msg: >-
           Agent policy {{ fleet_server_policy_id }} doesn't exist yet: apply
-          shared/fleet (cd shared/fleet && mise run tofu:plan, tofu:apply),
+          stacks/shared/fleet (cd stacks/shared/fleet && mise run tofu:plan, tofu:apply),
           then run `mise run ansible:site` again.
 
     - name: End this host's Fleet Server play

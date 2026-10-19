@@ -36,7 +36,7 @@ needed only for this page's stages 9 and 10). From core, the platform uses:
 
 | What | Where it's set up in core | Used here by |
 | --- | --- | --- |
-| The VM template `ubuntu-26.04-core` and the VM module (by tag, `terramate.tm.hcl`) | Stage 5 (`packer build`) | `platform/elastic`, `apps/otel-demo` |
+| The VM template `ubuntu-26.04-core` and the VM module (by tag, `terramate.tm.hcl`) | Stage 5 (`packer build`) | `stacks/platform/elastic`, `stacks/apps/otel-demo` |
 | `terraform@pve!terraform`, `TF_VAR_cipassword`, the HCP token, in `~/.secrets/homelab.yaml` | CREDENTIALS.md steps 1, 2, 5 | `mise run tofu:*` |
 | Your age key at `~/.config/sops/age/bcochofel.txt`, and the `ci` key's public half | CREDENTIALS.md steps 4, 11.1 | every `*.sops.yaml` here (`.sops.yaml`) |
 | DNS for every platform VM, and `kibana`/`pve1` through Caddy | `dns_hosts`, `caddy_sites` (`trusted_ca: platform-elastic`, core's copy of this repo's CA) | the inventory (`pve1.homelab.bcochofel.com`), Kibana's public URL |
@@ -103,9 +103,9 @@ The two VM stacks (tag `proxmox`), from their own directories so only
 they run:
 
 ```bash
-for d in platform apps; do (cd $d && mise run tofu:init && mise run tofu:plan); done
+for d in stacks/platform stacks/apps; do (cd $d && mise run tofu:init && mise run tofu:plan); done
 # review both plans, then:
-for d in platform apps; do (cd $d && mise run tofu:apply); done
+for d in stacks/platform stacks/apps; do (cd $d && mise run tofu:apply); done
 ```
 
 `tofu:plan` saves each plan to its stack's `tfplan`, and `tofu:apply`
@@ -130,7 +130,7 @@ branch, through a pull request.
    ```
 
 2. **The agents' client certificate**, once: every Elastic Agent presents
-   it to Logstash (mTLS); `shared/fleet` reads it (2 years: renew by
+   it to Logstash (mTLS); `stacks/shared/fleet` reads it (2 years: renew by
    deleting both files and running it again).
 
    ```bash
@@ -169,7 +169,7 @@ branch, through a pull request.
    reach without the homelab: it's the way back in.
 
 *Check:* `mise run lint` passes (`sops files are encrypted`, `terraform
-validate` of `shared/fleet` needs `agent-client.crt`), and
+validate` of `stacks/shared/fleet` needs `agent-client.crt`), and
 `mise run check:boundary` shows the `ai-agent` key refused by every one of
 these files.
 
@@ -201,12 +201,12 @@ manage: [`ELASTIC-API-KEY.md`](ELASTIC-API-KEY.md), *Creating it* and
 ## Stage 7. The shared stacks, then Fleet Server
 
 ```bash
-(cd shared && mise run tofu:init && mise run tofu:plan)   # review, then:
-(cd shared && mise run tofu:apply)
+(cd stacks/shared && mise run tofu:init && mise run tofu:plan)   # review, then:
+(cd stacks/shared && mise run tofu:apply)
 mise run ansible:site      # Fleet Server enrolls into fleet-server-policy
 ```
 
-`shared/fleet` imports Fleet's own default output and makes Logstash the
+`stacks/shared/fleet` imports Fleet's own default output and makes Logstash the
 default only after Fleet Server's integration exists (its `depends_on`).
 After enrolling, Fleet may show Fleet Server *Unhealthy* (`output`) for a
 few minutes while its output health check settles.
@@ -218,7 +218,7 @@ health check; *Kibana → Fleet → Agents*: one agent, `kibana`, Healthy.
 
 Six host groups and three workspaces:
 
-| Agent policy (`agent-policies/<id>`) | Hosts | Integrations | Data in workspace |
+| Agent policy (`stacks/agent-policies/<id>`) | Hosts | Integrations | Data in workspace |
 | --- | --- | --- | --- |
 | `elasticsearch` | `es-01`–`es-03` | system, Elasticsearch (stack monitoring) | `platform` |
 | `ingest` | `ingest` | system, Logstash (stack monitoring) | `platform` |
@@ -227,14 +227,14 @@ Six host groups and three workspaces:
 | `core-runner` | core's `runner01` (no Docker: it's masked there) | system | `core` |
 | `proxmox` | `pve1`, the Proxmox VE host | system | `core` |
 
-(`kibana` is on `fleet-server-policy`, `shared/fleet`'s.) This repo's
+(`kibana` is on `fleet-server-policy`, `stacks/shared/fleet`'s.) This repo's
 Ansible enrolls the platform VMs; **core's Ansible enrolls core's hosts**,
 with an enrollment token you copy from Fleet.
 
 ```bash
-for d in agent-policies workspaces; do (cd $d && mise run tofu:init && mise run tofu:plan); done
+for d in stacks/agent-policies stacks/workspaces; do (cd $d && mise run tofu:init && mise run tofu:plan); done
 # review, then:
-for d in agent-policies workspaces; do (cd $d && mise run tofu:apply); done
+for d in stacks/agent-policies stacks/workspaces; do (cd $d && mise run tofu:apply); done
 mise run ansible:site      # every platform VM's agent enrolls into its host group's policy
 ```
 
@@ -270,7 +270,7 @@ mise run check:telemetry
 
 Two `ok` lines per host, ten hosts once core's are enrolled: the six
 platform VMs (from Ansible's inventory, so a VM added later is checked
-too) and core's four (the `hosts` of `agent-policies/core`, `core-runner`
+too) and core's four (the `hosts` of `stacks/agent-policies/core`, `core-runner`
 and `proxmox`). For each, its agent is online in Fleet on its policy, and
 its host metrics (`metrics-system.*`) reached Elasticsearch **in its
 policy's namespace** (`platform`, `otel_demo` or `core`) in the last 10
@@ -384,7 +384,7 @@ SETUP.md, *Output: the logs are public*).
 | --- | --- | --- |
 | OpenTofu's Elastic API key | 365 days (the current one: 2027-10-19) | [`ELASTIC-API-KEY.md`](ELASTIC-API-KEY.md), *Rotating it* (the rules are re-keyed too) |
 | The CI plan's Elastic API key | 365 days (`ci-plan-homelab-proxmox-platform-2026-10`: 2027-10-19) | A new one (stage 10), in `ci/dry-run.sops.yaml`, then invalidate the old |
-| The agents' client certificate | 2 years | Stage 4, step 2, then `tofu:apply` in `shared/fleet` |
+| The agents' client certificate | 2 years | Stage 4, step 2, then `tofu:apply` in `stacks/shared/fleet` |
 | The internal CA | 10 years | Stage 4, step 1, every host's certificate again (`ansible:site`), and core's copy |
 
 ## Red button

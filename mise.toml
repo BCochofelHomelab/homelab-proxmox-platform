@@ -265,7 +265,7 @@ exit $rc
 
 # OpenTofu, through `terramate run`: every stack under the directory you run
 # it from, in order (`after`), each with its own state. From the repo root,
-# every stack; from platform/elastic, that one. One sops exec-env holds the
+# every stack; from stacks/platform/elastic, that one. One sops exec-env holds the
 # credentials for the whole run: TF_TOKEN_app_terraform_io (HCP),
 # TF_VAR_proxmox_api_token, TF_VAR_cipassword and ELASTICSEARCH_API_KEY.
 
@@ -364,7 +364,7 @@ check() {
 description = "Check every host the platform observes (its VMs, core's hosts) reports its telemetry: agent online in Fleet on its policy, recent host metrics in Elasticsearch (read-only; ~/.secrets/homelab.yaml)"
 dir = "{{config_root}}/ansible"
 env = { SOPS_AGE_KEY_FILE = "{{env.HOME}}/.config/sops/age/bcochofel.txt" }
-run = "sops exec-env ~/.secrets/homelab.yaml 'inv=$(ansible-inventory --list) && printf \"%s\" \"$inv\" | python ../scripts/check_telemetry.py --inventory - --policies ../agent-policies --cacert pki/elastic-ca.crt'"
+run = "sops exec-env ~/.secrets/homelab.yaml 'inv=$(ansible-inventory --list) && printf \"%s\" \"$inv\" | python ../scripts/check_telemetry.py --inventory - --policies ../stacks/agent-policies --cacert pki/elastic-ca.crt'"
 
 # The internal CA, once: ansible/pki/elastic-ca.crt (commit it) and
 # elastic-ca.key.sops, encrypted to your key and the ci key (.sops.yaml).
@@ -399,7 +399,7 @@ echo "Commit $crt and $key."
 '''
 
 # The client certificate every Elastic Agent presents to Logstash (mTLS):
-# Fleet's Logstash output holds one, shared by every agent (shared/fleet).
+# Fleet's Logstash output holds one, shared by every agent (stacks/shared/fleet).
 # Issued once, signed by the internal CA; the key is generated in memory,
 # piped into SOPS (your key and the ci key, .sops.yaml) and never written
 # in clear. Refuses to replace an existing one: delete both files to renew.

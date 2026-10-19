@@ -2,11 +2,11 @@
 # The OpenTelemetry demo VM (hand-authored).
 
 # The workspace the demo's data belongs to: its data stream namespace
-# (namespace = workspace id, workspaces/otel_demo). Every signal the demo's
+# (namespace = workspace id, stacks/workspaces/otel_demo). Every signal the demo's
 # collector exports carries it as data_stream.namespace, which the gateway's
 # Elasticsearch exporter routes by (roles/otel_demo). Checked against the
 # workspaces by scripts/check_contract.py.
 otel_demo_namespace: otel_demo
 
-# The host group's Fleet agent policy: agent-policies/otel-demo.
+# The host group's Fleet agent policy: stacks/agent-policies/otel-demo.
 elastic_agent_policy_id: otel-demo

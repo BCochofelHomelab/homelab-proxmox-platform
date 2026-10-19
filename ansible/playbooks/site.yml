@@ -1,8 +1,8 @@
 ---
 # Full provision, after the VM stacks are applied (`mise run tofu:apply`):
-# `mise run ansible:site`. Fleet Server waits for shared/fleet (40), and
-# each VM's agent for its agent-policies/<group> (50): the first run skips
-# them; run this again after applying shared/ and agent-policies/.
+# `mise run ansible:site`. Fleet Server waits for stacks/shared/fleet (40), and
+# each VM's agent for its stacks/agent-policies/<group> (50): the first run skips
+# them; run this again after applying stacks/shared/ and stacks/agent-policies/.
 
 # On the CI dry-run runner every job has HOMELAB_DRY_RUN=1 (docs/SETUP.md):
 # there, refuse anything but --check. A backstop only, since a pull request

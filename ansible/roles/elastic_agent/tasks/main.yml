@@ -1,15 +1,15 @@
 ---
 # Installs Elastic Agent and enrolls it into the host group's Fleet policy
-# (elastic_agent_policy_id: agent-policies/<group>/), once: an enrolled
+# (elastic_agent_policy_id: stacks/agent-policies/<group>/), once: an enrolled
 # agent is never re-enrolled, only waited for until it's connected. Moving
 # it to another policy is done in Fleet. Fleet Server's host has its own
 # role (roles/fleet_server).
 #
 # Run order: Ansible runs before the agent-policy stacks. Until the group's
 # policy exists, this host is skipped with a message; run
-# `mise run ansible:site` again after applying agent-policies/.
+# `mise run ansible:site` again after applying stacks/agent-policies/.
 
-- name: Check the agent policy exists (agent-policies/{{ elastic_agent_policy_id }})
+- name: Check the agent policy exists (stacks/agent-policies/{{ elastic_agent_policy_id }})
   ansible.builtin.uri:
     url: "{{ elastic_agent_kibana_url }}/api/fleet/agent_policies/{{ elastic_agent_policy_id }}"
     ca_path: "{{ elastic_ca_cert }}"
@@ -29,7 +29,7 @@
       ansible.builtin.debug:
         msg: >-
           Agent policy {{ elastic_agent_policy_id }} doesn't exist yet: apply
-          agent-policies/{{ elastic_agent_policy_id }} (mise run tofu:plan,
+          stacks/agent-policies/{{ elastic_agent_policy_id }} (mise run tofu:plan,
           tofu:apply there), then run `mise run ansible:site` again.
 
     - name: End this host's agent play

@@ -79,7 +79,7 @@ mise run check     # the above + gitleaks on the full history (what CI runs)
 Four repo-specific rules the hooks enforce:
 
 - **Namespace = workspace id.** A workspace is a folder under
-  `workspaces/`, and its name, the id, matches `^[a-z0-9_]{1,64}$` and
+  `stacks/workspaces/`, and its name, the id, matches `^[a-z0-9_]{1,64}$` and
   isn't `default`. Every namespace an agent policy or the ingest VM writes
   data with names an existing workspace
   ([`scripts/check_contract.py`](scripts/check_contract.py)).

@@ -1,4 +1,4 @@
-# Generated into every stack tagged "fleet" (shared/fleet and every agent
+# Generated into every stack tagged "fleet" (stacks/shared/fleet and every agent
 # policy): the platform's integration package versions (global
 # fleet_packages), so one bump reaches every stack that installs or uses a
 # package. Imported by terramate.tm.hcl.

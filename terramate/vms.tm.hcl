@@ -19,7 +19,7 @@ generate_hcl "_terramate_generated_vms.tf" {
       name          = each.key
       target_node   = local.target_node
       template_vmid = local.template_vmid
-      description   = "Managed by OpenTofu (homelab-proxmox-platform, ${terramate.stack.path.relative})"
+      description   = "Managed by OpenTofu (homelab-proxmox-platform, ${global.stack_path})"
       tags          = concat(["platform", "terraform"], each.value.groups)
 
       cores  = each.value.cores

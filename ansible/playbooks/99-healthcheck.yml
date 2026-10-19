@@ -245,8 +245,8 @@
 
 # From Fleet's side, as Kibana shows it: each host's agent is online in its
 # policy, Fleet Server's included (every agent enrolled through it over TLS
-# verified against the internal CA). An agent whose policy doesn't exist yet (shared/fleet for Fleet
-# Server, agent-policies/<group> for the rest) is reported as waiting.
+# verified against the internal CA). An agent whose policy doesn't exist yet (stacks/shared/fleet for Fleet
+# Server, stacks/agent-policies/<group> for the rest) is reported as waiting.
 # Retries: a newly enrolled agent is reported unhealthy until its first
 # check-ins settle (the output's health among them).
 - name: Elastic Agents health check
