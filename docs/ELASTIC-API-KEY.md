@@ -65,7 +65,7 @@ yours.
 POST /_security/api_key
 {
   "name": "opentofu-homelab-proxmox-platform-2026-10",
-  "expiration": "90d",
+  "expiration": "365d",
   "role_descriptors": {
     "opentofu-homelab-proxmox-platform": {
       "cluster": ["monitor", "manage_ilm", "manage_index_templates", "manage_security"],
@@ -93,8 +93,9 @@ POST /_security/api_key
 ```
 
 The name carries the month it was created, so the old and the new key
-can be told apart while rotating. 90 days, as the AI agent's GitHub token
-(core's `docs/CREDENTIALS.md`, step 9): set a reminder a week before.
+can be told apart while rotating. 365 days: rotating means re-keying the
+rules too, so once a year, not every quarter. Set a reminder a week
+before it expires.
 
 The response shows the key once. Put its **`encoded`** value (not `id`,
 not `api_key`) in `homelab.yaml`, from `~/.secrets` (SOPS finds its
@@ -109,6 +110,12 @@ SOPS_AGE_KEY_FILE=~/.config/sops/age/bcochofel.txt sops homelab.yaml
 # homelab-proxmox-platform's OpenTofu, the Elastic stacks (its mise run tofu:*)
 ELASTICSEARCH_API_KEY: "<the encoded value>"
 ```
+
+**The current key:** `opentofu-homelab-proxmox-platform-2026-10`,
+created 2026-10-19, expires 2027-10-19 (rotate in the week before). It
+replaced `opentofu-homelab-proxmox-platform` (unscoped, no expiry, no
+read on the data streams), invalidated the same day. Update this line at
+every rotation.
 
 ## Checking it
 
