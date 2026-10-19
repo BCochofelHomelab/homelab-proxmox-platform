@@ -60,7 +60,7 @@ jobs:
           shared='^(mise\.toml|mise\.lock|\.sops\.yaml|ci/|\.github/workflows/dry-run\.yml$)'
           # Every stack, what generates them, and the files the Elastic stacks
           # read at plan time (the CA, the agents' client key, elastic.sops.yaml).
-          stacks='^(platform|apps|shared|agent-policies|workspaces|terramate)/|^terramate\.tm\.hcl$|^ansible/pki/|^ansible/inventory/group_vars/elastic\.sops\.yaml$'
+          stacks='^(stacks|terramate)/|^terramate\.tm\.hcl$|^ansible/pki/|^ansible/inventory/group_vars/elastic\.sops\.yaml$'
           if grep -qE "$stacks|$shared" <<<"$files"; then echo plan=true; else echo plan=false; fi >>"$GITHUB_OUTPUT"
           if grep -qE "^ansible/|$shared" <<<"$files"; then echo check=true; else echo check=false; fi >>"$GITHUB_OUTPUT"
 
