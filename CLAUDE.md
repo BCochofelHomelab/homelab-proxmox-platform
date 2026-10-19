@@ -181,6 +181,9 @@ commit), tags `X.Y.Z` with no `v`, first release `1.0.0`.
   Kibana through `trusted_ca`.
 - **One code owner**, `sre-lead`.
 - Never name the repository this replaced, in any file.
+- **Docs name no versions** (README, CONTRIBUTING, `docs/`, the diagram):
+  point to where it's pinned (`mise.toml`, `terramate.tm.hcl`,
+  `group_vars/all.yml`, `.terraform.lock.hcl`). Dates of records are fine.
 
 ## The guardrails (the same as homelab-proxmox-core's)
 

@@ -246,7 +246,8 @@ Then **core's hosts**:
 2. Put each in core's `ansible/inventory/group_vars/<group>.sops.yaml`
    (your key and the `ci` key), in the file core's AI agent names for
    it: tokens are secrets, never pasted to the agent.
-3. Core's `mise run ansible:site` installs Elastic Agent 9.5.4 on `proxy`,
+3. Core's `mise run ansible:site` installs Elastic Agent, the stack's
+   version (`elastic_version`, `group_vars/all.yml`), on `proxy`,
    `server01`, `runner01` and `pve1` and enrolls each into its policy,
    trusting this repo's CA (core's `ansible/files/trust/platform-elastic.crt`).
 
@@ -424,13 +425,13 @@ investigation agents that read everything and write nothing, read-only
 enforced by the credential and proven by a negative test (core's
 SRE-AI.md A8, and Phases B and C). The proposal, decided on the free tier
 (Basic): Kibana's Agent Builder MCP endpoint needs an Enterprise licence
-(Kibana 9.5.4, `minimumLicense: 'enterprise'`), so it's Elastic's
+(Kibana's `minimumLicense: 'enterprise'`), so it's Elastic's
 standalone server instead.
 
 1. **The server:** Elastic's
    [`mcp-server-elasticsearch`](https://github.com/elastic/mcp-server-elasticsearch)
-   **v0.4.6**, the Linux binary from its release, pinned in `mise.toml`
-   with its SHA-256 (`7ec9c268...0cde6`, GitHub's digest), as
+   the Linux binary from its latest release, pinned in `mise.toml` with
+   its SHA-256 (GitHub's digest), as
    `terraform-mcp-server` is. No Docker: the devcontainer has no Docker
    socket. It's deprecated (critical security fixes only, superseded by
    Agent Builder), which is the cost of staying on Basic: bumps are rare
@@ -473,9 +474,9 @@ standalone server instead.
 
 3. **TLS verified against the internal CA**, never
    `ES_SSL_SKIP_VERIFY`. The server has no CA option, but it links the
-   system's OpenSSL 3, which reads `SSL_CERT_FILE`: set to
+   system's OpenSSL, which reads `SSL_CERT_FILE`: set to
    `ansible/pki/elastic-ca.crt` for this server's process only, its
-   connections verify. Tested on the v0.4.6 binary against a stand-in
+   connections verify. Tested on the released binary against a stand-in
    with a test CA: with `SSL_CERT_FILE` the call succeeds; without it the
    handshake fails and no request is sent.
 4. **`.mcp.json`**, as the Proxmox and GitHub servers: `sops exec-env
