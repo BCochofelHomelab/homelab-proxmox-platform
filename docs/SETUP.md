@@ -321,8 +321,11 @@ repository:
      ```
 
 2. **The automation key on the VMs:** `ci_ssh_key` (in `site.yml`) puts
-   its public half on every VM, at every `ansible:site`. Core's template
-   already has it for VMs cloned since 2026-10-12.
+   its public half on every VM, at every `ansible:site`: a clone of
+   core's template doesn't have it (checked 2026-10-19: none of the six
+   did), so run `mise run ansible:site` once, from `main`, before the
+   first dry-run, and before committing the workflow (step 4): a
+   dry-run's `ci:check` can't reach a VM without the key.
 3. **The `dry-run` environment** (*Settings → Environments*), as core's:
    *Required reviewers* `sre-lead`, *Prevent self-review* off, *Allow
    administrators to bypass* **off**, no deployment branch restriction,
