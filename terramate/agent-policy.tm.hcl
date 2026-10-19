@@ -12,8 +12,7 @@
 #       package:   a key of global.fleet_packages (installed by shared/fleet)
 #       namespace: the workspace this integration's data belongs to
 #       description: optional
-#       inputs:
-#                  since one variable's type differs from the next)    optional, by input id (<policy template>-<input type>,
+#       inputs:    optional, by input id (<policy template>-<input type>,
 #                  the package's manifest): only what differs from the
 #                  package's defaults
 #         <input id>:
