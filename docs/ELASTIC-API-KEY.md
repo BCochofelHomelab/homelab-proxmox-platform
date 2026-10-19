@@ -16,9 +16,10 @@ other shared credential, are homelab-proxmox-core's
 
 ## What it may do
 
-Checked against Elasticsearch's and Kibana's 9.5.4 sources and docs, and
-the `elastic/elasticstack` provider at v0.16.6 (the version in every
-stack's `.terraform.lock.hcl`):
+Checked against the sources and docs of the Elasticsearch and Kibana
+version the platform runs (`elastic.version` in `terramate.tm.hcl`) and of
+the `elastic/elasticstack` provider every stack locks
+(`.terraform.lock.hcl`). Bumping either means checking this table again:
 
 | Privilege | Needed by | Why |
 | --- | --- | --- |
@@ -37,7 +38,7 @@ means updating this table and creating a new key with it.
 ### Rules run on this key
 
 A rule created through Kibana's API by a caller authenticated with an
-API key keeps that very key and runs on it (Kibana 9.5.4,
+API key keeps that very key and runs on it (Kibana's
 `resolve_rule_api_key.ts`: `api_key_created_by_user: true`). So the
 workspaces' rules (`No data`, `Error rate`, the platform's `Data in a
 namespace with no workspace`) search their data with this key's `read`

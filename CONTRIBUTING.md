@@ -25,6 +25,14 @@ review conversation resolved. **Merge right after you approve**: once
 approved, GitHub would let any user with Write merge, the machine user
 included. Squash or rebase merges only (linear history).
 
+## Docs
+
+The README, this file and `docs/` (diagrams included) name no versions:
+they're stale the day a version changes. Point to where the version is
+pinned instead (`mise.toml`, `terramate.tm.hcl`, `group_vars/all.yml`,
+a stack's `.terraform.lock.hcl`). Dates are fine where they record when
+something was done.
+
 ## Branches
 
 Short-lived branches off `main`, deleted after merge, named
