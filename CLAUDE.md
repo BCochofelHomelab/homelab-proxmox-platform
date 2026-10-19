@@ -223,3 +223,10 @@ request that adds or changes such a step updates it too, and lists the
 step in its description. Its *Open items* hold proposals not yet built
 (the agent's read-only Elasticsearch MCP server, decided: standalone
 v0.4.6, free tier).
+
+`mise run check:telemetry` (the human's, denied to the agent: homelab.yaml)
+checks every VM in Ansible's inventory and every host listed under `hosts`
+in an `agent-policy.yaml` (core's, which core's Ansible enrolls): an
+online agent on its policy, and recent `metrics-system.*` in that
+policy's `system` namespace (`scripts/check_telemetry.py`). An agent no
+policy lists is a `note`. A new core host: add it to its policy's `hosts`.

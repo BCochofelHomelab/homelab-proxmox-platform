@@ -5,6 +5,9 @@
 # policy's enrollment token.
 name: Proxmox
 description: The Proxmox VE host, pve1
+# The hosts enrolled into it, by hostname, from outside this repo's
+# Ansible: mise run check:telemetry checks each one's agent and metrics.
+hosts: [pve1]
 # The agents' own logs and metrics: the platform runs the agents.
 namespace: platform
 integrations:

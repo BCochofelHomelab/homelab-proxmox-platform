@@ -6,6 +6,9 @@
 # token.
 name: Homelab core runner
 description: "homelab-proxmox-core's dry-run CI runner, runner01"
+# The hosts enrolled into it, by hostname, from outside this repo's
+# Ansible: mise run check:telemetry checks each one's agent and metrics.
+hosts: [runner01]
 # The agents' own logs and metrics: the platform runs the agents.
 namespace: platform
 integrations:

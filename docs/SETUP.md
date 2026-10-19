@@ -260,12 +260,40 @@ Then your own Kibana user (*Stack Management → Users*), so `elastic`
 stays for setup and recovery: `platform-admin` covers every space, or the
 workspaces' `workspace-<id>-editor` / `-viewer` roles.
 
-*Check:* nine new workspaces *Local*; the health check waits until every
-platform VM's agent is online in Fleet; *Kibana → Fleet → Agents*: ten
-agents, all Healthy, once core's hosts are enrolled; *Stack Monitoring*:
-the cluster's 3 nodes, Kibana and Logstash; the *Core* space shows host
-metrics from core's four hosts, and container metrics and logs from
-`proxy` and `server01`.
+*Check:* nine new workspaces *Local*, and every host reports its
+telemetry:
+
+```bash
+mise run check:telemetry
+```
+
+Two `ok` lines per host, ten hosts once core's are enrolled: the six
+platform VMs (from Ansible's inventory, so a VM added later is checked
+too) and core's four (the `hosts` of `agent-policies/core`, `core-runner`
+and `proxmox`). For each, its agent is online in Fleet on its policy, and
+its host metrics (`metrics-system.*`) reached Elasticsearch **in its
+policy's namespace** (`platform`, `otel_demo` or `core`) in the last 10
+minutes: the whole path (agent, Logstash, Elasticsearch), not only the
+agent. Read-only, with your inventory token and OpenTofu's key. Until
+core's Ansible has enrolled them, core's hosts `FAIL` with *no agent*.
+In Kibana: *Fleet → Agents*, ten agents Healthy; *Stack Monitoring*, the
+cluster's 3 nodes, Kibana and Logstash; the *Core* space, container
+metrics and logs from `proxy` and `server01` too.
+
+A `FAIL` names what's missing:
+
+- *no online agent*: `offline` or `unhealthy` on the right policy, see
+  the agent in *Fleet → Agents* (its last check-in, the unit that
+  fails); on another policy, the host's policy (a platform VM's
+  `elastic_agent_policy_id`, or a core host's enrollment token); *no
+  agent*, a platform VM: `mise run ansible:site -- --limit <vm>`, which
+  enrolls it; a core host: core's `ansible:site`.
+- *no host metrics* with the agent online: the path after the agent,
+  Logstash (`ingest`) first, the health check's Logstash play. Metrics
+  in another namespace mean the policy's `system` integration names the
+  wrong workspace.
+- An agent in Fleet that no policy's hosts list is a `note`: enrolled by
+  hand, or a host to add to an `agent-policy.yaml`.
 
 ## Stage 9. The AI agent (optional)
 
@@ -378,6 +406,7 @@ From your clone, on `main`:
 mise run check            # what CI runs
 mise run tofu:plan        # every stack: No changes
 mise run ansible:site     # failed=0 everywhere; every agent online in Fleet
+mise run check:telemetry  # every VM: agent online, metrics arriving
 mise run ci:plan          # every stack: No changes (stage 10)
 mise run ci:check         # failed=0 (stage 10)
 ```

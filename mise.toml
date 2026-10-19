@@ -355,6 +355,17 @@ check() {
   ANSIBLE_PRIVATE_KEY_FILE="$tmp/ssh_key" sops exec-env ../ci/dry-run.sops.yaml "ansible-playbook playbooks/site.yml --check --diff$args"
 }; check'''
 
+# Read-only, but with your credentials: the inventory token and OpenTofu's
+# Elastic API key (the only Elastic key yet), both from homelab.yaml.
+# Every VM in Ansible's inventory and every host an agent-policy.yaml lists
+# (core's): its agent online in Fleet on its policy, and its host metrics in
+# its policy's namespace in Elasticsearch (scripts/check_telemetry.py).
+[tasks."check:telemetry"]
+description = "Check every host the platform observes (its VMs, core's hosts) reports its telemetry: agent online in Fleet on its policy, recent host metrics in Elasticsearch (read-only; ~/.secrets/homelab.yaml)"
+dir = "{{config_root}}/ansible"
+env = { SOPS_AGE_KEY_FILE = "{{env.HOME}}/.config/sops/age/bcochofel.txt" }
+run = "sops exec-env ~/.secrets/homelab.yaml 'inv=$(ansible-inventory --list) && printf \"%s\" \"$inv\" | python ../scripts/check_telemetry.py --inventory - --policies ../agent-policies --cacert pki/elastic-ca.crt'"
+
 # The internal CA, once: ansible/pki/elastic-ca.crt (commit it) and
 # elastic-ca.key.sops, encrypted to your key and the ci key (.sops.yaml).
 # The key is generated in memory and piped into SOPS, never written in

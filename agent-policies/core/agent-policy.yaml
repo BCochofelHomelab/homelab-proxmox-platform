@@ -5,6 +5,9 @@
 # Ansible, with this policy's enrollment token.
 name: Homelab core
 description: "homelab-proxmox-core's edge VMs: proxy (Caddy), server01 (CoreDNS, Pi-hole)"
+# The hosts enrolled into it, by hostname, from outside this repo's
+# Ansible: mise run check:telemetry checks each one's agent and metrics.
+hosts: [proxy, server01]
 # The agents' own logs and metrics: the platform runs the agents.
 namespace: platform
 integrations:
