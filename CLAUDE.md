@@ -106,7 +106,12 @@ v9.5.4's source), `shared/fleet` (packages `fleet_server` 1.6.1, `system`
 below). Order: `shared/data` and `shared/security` after
 `/platform/elastic`, `shared/fleet` after `/shared/data`. Elastic stacks
 get a comment-only generated `variables.tf` (TFLint). The OpenTofu API key
-is the human's (`ELASTICSEARCH_API_KEY` in `homelab.yaml`).
+is the human's (`ELASTICSEARCH_API_KEY` in `homelab.yaml`), scoped in
+`docs/ELASTIC-API-KEY.md` (monitor, manage_ilm, manage_index_templates,
+manage_security; read on logs/metrics/traces; Kibana `all` on `*`, which
+spaces need): a resource type needing another privilege updates that
+page's table and request. Rules created with it keep it (Kibana 9.5.4),
+so rotating it runs `scripts/elastic_rekey_rules.py`.
 
 Agent policies and workspaces (PR 10): `agent-policies/<group>/`
 (`elasticsearch`, `ingest`, `otel-demo`; and core's hosts: `core` for proxy
