@@ -194,7 +194,7 @@ Elasticsearch.
 The only credential that writes to Elastic, scoped to what the stacks
 manage: [`ELASTIC-API-KEY.md`](ELASTIC-API-KEY.md), *Creating it* and
 *Checking it*. It goes in `~/.secrets/homelab.yaml` as
-`ELASTICSEARCH_API_KEY`, and expires after 90 days: set the reminder.
+`ELASTICSEARCH_API_KEY`, and expires after 365 days: set the reminder.
 
 *Check:* that page's `_has_privileges` answer.
 
@@ -350,7 +350,7 @@ SETUP.md, *Output: the logs are public*).
 
 | What | Lifetime | Renew |
 | --- | --- | --- |
-| OpenTofu's Elastic API key | 90 days | [`ELASTIC-API-KEY.md`](ELASTIC-API-KEY.md), *Rotating it* (the rules are re-keyed too) |
+| OpenTofu's Elastic API key | 365 days (the current one: 2027-10-19) | [`ELASTIC-API-KEY.md`](ELASTIC-API-KEY.md), *Rotating it* (the rules are re-keyed too) |
 | The CI plan's Elastic API key | 90 days | A new one (stage 10), in `ci/dry-run.sops.yaml`, then invalidate the old |
 | The agents' client certificate | 2 years | Stage 4, step 2, then `tofu:apply` in `shared/fleet` |
 | The internal CA | 10 years | Stage 4, step 1, every host's certificate again (`ansible:site`), and core's copy |
