@@ -32,8 +32,11 @@ es_transport_port: 9300
 # Fleet Server, where every agent enrolls (shared/fleet).
 fleet_url: "https://{{ hostvars[groups['fleet_server'][0]].ansible_host }}:8220"
 
-# HTTPS endpoints of every Elasticsearch node.
+# HTTPS endpoints of every Elasticsearch node, sorted: Proxmox's inventory
+# lists a group's hosts in a different order from run to run, and every
+# config file that lists them (kibana.yml, the Logstash pipeline, otel.yml)
+# would change, and restart its service, each time.
 es_hosts: >-
-  {{ groups['elasticsearch'] | map('extract', hostvars, 'ansible_host')
+  {{ groups['elasticsearch'] | sort | map('extract', hostvars, 'ansible_host')
      | map('regex_replace', '^', 'https://')
      | map('regex_replace', '$', ':' ~ es_http_port) | list }}
