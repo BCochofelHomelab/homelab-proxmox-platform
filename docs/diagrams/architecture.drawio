@@ -31,7 +31,7 @@
         <mxCell id="operator" value="You (your clone) &#183; mise run tofu:* / ansible:site" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;fillColor=#f8fafc;strokeColor=#94a3b8;fontColor=#334155;fontSize=15;fontStyle=1;arcSize=4;" vertex="1" parent="1">
           <mxGeometry x="720" y="50" width="640" height="226" as="geometry" />
         </mxCell>
-        <mxCell id="tofu" value="&lt;b&gt;OpenTofu + Terramate&lt;/b&gt;&lt;br&gt;one state per stack&lt;br&gt;(HCP Terraform, Local execution)&lt;br&gt;&lt;br&gt;VM stacks &#8594; Proxmox API&lt;br&gt;shared/, agent-policies/, workspaces/&lt;br&gt;&#8594; Elasticsearch and Kibana APIs" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=#ffffff;strokeColor=#64748b;fontColor=#1e293b;fontSize=13;arcSize=8;" vertex="1" parent="1">
+        <mxCell id="tofu" value="&lt;b&gt;OpenTofu + Terramate&lt;/b&gt;&lt;br&gt;one state per stack&lt;br&gt;(HCP Terraform, Local execution)&lt;br&gt;&lt;br&gt;VM stacks &#8594; Proxmox API&lt;br&gt;stacks/: shared, agent-policies, workspaces&lt;br&gt;&#8594; Elasticsearch and Kibana APIs" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=#ffffff;strokeColor=#64748b;fontColor=#1e293b;fontSize=13;arcSize=8;" vertex="1" parent="1">
           <mxGeometry x="740" y="88" width="300" height="168" as="geometry" />
         </mxCell>
         <mxCell id="ansible" value="&lt;b&gt;Ansible&lt;/b&gt;&lt;br&gt;inventory: Proxmox's own list of VMs,&lt;br&gt;by tag (read-only token, via Caddy)&lt;br&gt;&lt;br&gt;SSH to the platform VMs&lt;br&gt;internal CA: signs each host's CSR;&lt;br&gt;keys never leave the hosts" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=#ffffff;strokeColor=#64748b;fontColor=#1e293b;fontSize=13;arcSize=8;" vertex="1" parent="1">
@@ -88,7 +88,7 @@
         </mxCell>
 
         <!-- Elastic Agents -->
-        <mxCell id="agents" value="&lt;b&gt;Elastic Agent&lt;/b&gt; on every host: es-01..03, ingest, otel-demo, kibana (as Fleet Server), and core's proxy, server01, runner01 and pve1&lt;br&gt;enroll and check in with Fleet Server :8220 &#160;&#183;&#160; send data to Logstash :5044, mTLS with a shared client certificate &#160;&#183;&#160; one policy per host group (agent-policies/)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#059669;strokeWidth=2;dashed=1;fontColor=#065f46;fontSize=13;arcSize=8;" vertex="1" parent="1">
+        <mxCell id="agents" value="&lt;b&gt;Elastic Agent&lt;/b&gt; on every host: es-01..03, ingest, otel-demo, kibana (as Fleet Server), and core's proxy, server01, runner01 and pve1&lt;br&gt;enroll and check in with Fleet Server :8220 &#160;&#183;&#160; send data to Logstash :5044, mTLS with a shared client certificate &#160;&#183;&#160; one policy per host group (stacks/agent-policies/)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#059669;strokeWidth=2;dashed=1;fontColor=#065f46;fontSize=13;arcSize=8;" vertex="1" parent="1">
           <mxGeometry x="60" y="756" width="1280" height="90" as="geometry" />
         </mxCell>
 

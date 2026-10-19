@@ -1,7 +1,7 @@
 ---
 # Logstash on the ingest VM (hand-authored).
 
-# The 50 GB data disk (platform/elastic, scsi1) holds path.data,
+# The 50 GB data disk (stacks/platform/elastic, scsi1) holds path.data,
 # including the persistent queue.
 data_disk_mount_point: /var/lib/logstash
 
@@ -11,5 +11,5 @@ logstash_heap_size: 1g
 # Port every Elastic Agent sends to (Fleet's Logstash output).
 logstash_agent_port: 5044
 
-# The ingest VM's Fleet agent policy: agent-policies/ingest.
+# The ingest VM's Fleet agent policy: stacks/agent-policies/ingest.
 elastic_agent_policy_id: ingest

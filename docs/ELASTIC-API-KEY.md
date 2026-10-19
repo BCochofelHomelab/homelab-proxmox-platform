@@ -2,8 +2,8 @@
 
 `ELASTICSEARCH_API_KEY`, in `~/.secrets/homelab.yaml` (your key only), is
 the only credential that writes to the Elastic Stack. Every stack tagged
-`elastic` uses it, through the `mise run tofu:*` tasks: `shared/security`,
-`shared/data`, `shared/fleet`, `agent-policies/*` and `workspaces/*`. The
+`elastic` uses it, through the `mise run tofu:*` tasks: `stacks/shared/security`,
+`stacks/shared/data`, `stacks/shared/fleet`, `stacks/agent-policies/*` and `stacks/workspaces/*`. The
 provider sends it to Elasticsearch, and to Kibana and Fleet as well (they
 fall back to it when they have no credentials of their own).
 
@@ -24,10 +24,10 @@ the `elastic/elasticstack` provider every stack locks
 | Privilege | Needed by | Why |
 | --- | --- | --- |
 | cluster `monitor` | every stack | The provider reads the cluster's version (`GET /`, `cluster:monitor/main`) to decide what a resource may send. |
-| cluster `manage_ilm` | `shared/data` | `elasticstack_elasticsearch_index_lifecycle` (`platform-30d`). |
-| cluster `manage_index_templates` | `shared/data` | `elasticstack_elasticsearch_component_template` (`logs@custom`, `metrics@custom`, `traces@custom`). |
-| cluster `manage_security` | `shared/security`, `workspaces/*` | Roles (`elasticstack_kibana_security_role`: Kibana's role API writes the role to Elasticsearch as the caller) and role mappings (`elasticstack_elasticsearch_security_role_mapping`). No narrower privilege writes roles: `read_security` only reads them. |
-| index `read`, `view_index_metadata` on `logs-*`, `metrics-*`, `traces-*` | `workspaces/*` | Data views read the fields; the workspaces' rules query the data (below). |
+| cluster `manage_ilm` | `stacks/shared/data` | `elasticstack_elasticsearch_index_lifecycle` (`platform-30d`). |
+| cluster `manage_index_templates` | `stacks/shared/data` | `elasticstack_elasticsearch_component_template` (`logs@custom`, `metrics@custom`, `traces@custom`). |
+| cluster `manage_security` | `stacks/shared/security`, `stacks/workspaces/*` | Roles (`elasticstack_kibana_security_role`: Kibana's role API writes the role to Elasticsearch as the caller) and role mappings (`elasticstack_elasticsearch_security_role_mapping`). No narrower privilege writes roles: `read_security` only reads them. |
+| index `read`, `view_index_metadata` on `logs-*`, `metrics-*`, `traces-*` | `stacks/workspaces/*` | Data views read the fields; the workspaces' rules query the data (below). |
 | Kibana `all`, every space (`kibana-.kibana`, privilege `all`, resource `*`) | every stack | Creating a space needs Kibana's *global* `all` (the spaces client checks `space:manage`, which only global `all` grants). It also covers Fleet and Integrations (Fleet's routes check only those two Kibana features, then write as Kibana's internal user), data views, saved objects, connectors and rules. |
 
 Nothing else: no `manage` (cluster settings), no `manage_pipeline`, no

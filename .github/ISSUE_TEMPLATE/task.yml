@@ -15,7 +15,7 @@ body:
       options:
         - VMs (platform/, apps/)
         - Ansible
-        - Elastic content (shared/, agent-policies/, workspaces/)
+        - Elastic content (stacks/shared/, stacks/agent-policies/, stacks/workspaces/)
         - Terramate
         - CI/CD / tooling
         - Other

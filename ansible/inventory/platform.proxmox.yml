@@ -33,7 +33,7 @@ filters:
 compose:
   ansible_host: (proxmox_ipconfig0.ip | default('')).split('/') | first
 
-# Every Elastic VM (platform/elastic): group_vars/elastic.sops.yaml holds
+# Every Elastic VM (stacks/platform/elastic): group_vars/elastic.sops.yaml holds
 # the secret they share, elastic's password.
 groups:
   elastic: >-

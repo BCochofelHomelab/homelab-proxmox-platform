@@ -1,4 +1,4 @@
-# Generated into every stack tagged "workspace" (workspaces/<id>/): the call
+# Generated into every stack tagged "workspace" (stacks/workspaces/<id>/): the call
 # to terraform-elasticstack-workspace, from the workspace's folder. The
 # folder holds data; this is the code, the same for every workspace.
 # Imported by terramate.tm.hcl.
@@ -25,7 +25,7 @@ generate_hcl "_terramate_generated_workspace.tf" {
     ref  = tm_try(let.spec.module_ref, global.workspace_module.default_ref)
 
     # Every workspace, for the platform workspace's rule below.
-    workspace_ids = [for p in terramate.stacks.list : tm_basename(p) if tm_startswith(p, "/workspaces/")]
+    workspace_ids = [for p in terramate.stacks.list : tm_basename(p) if tm_startswith(p, "/stacks/workspaces/")]
 
     # The contract's third check, in the platform workspace only: data
     # arriving in a namespace that no workspace owns (a typo in an

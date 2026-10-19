@@ -10,14 +10,14 @@ The hosts:
     a VM added there is checked without editing this; their policy is
     fleet_server_policy_id (the kibana VM) or elastic_agent_policy_id;
   - the hosts enrolled from outside this repo's Ansible (core's), listed
-    under `hosts` in their agent-policies/<id>/agent-policy.yaml.
+    under `hosts` in their stacks/agent-policies/<id>/agent-policy.yaml.
 Each policy's namespace is its `system` integration's (agent-policy.yaml;
-Fleet Server's is shared/fleet's, `platform`).
+Fleet Server's is stacks/shared/fleet's, `platform`).
 
 Usage, yours only (`mise run check:telemetry`, which runs, from ansible/):
 
   ansible-inventory --list | python ../scripts/check_telemetry.py --inventory - \\
-    --policies ../agent-policies --cacert pki/elastic-ca.crt
+    --policies ../stacks/agent-policies --cacert pki/elastic-ca.crt
 
 with ELASTICSEARCH_API_KEY in the environment. Prints ok/FAIL per host and
 check, never the key; exits 1 on any FAIL.
@@ -37,8 +37,8 @@ import yaml
 KIBANA = "https://192.168.68.33:5601"
 ELASTICSEARCH = "https://192.168.68.30:9200"
 CA_CERT = "ansible/pki/elastic-ca.crt"
-POLICIES = "agent-policies"
-# Fleet Server's policy is shared/fleet's, not an agent-policies/ stack:
+POLICIES = "stacks/agent-policies"
+# Fleet Server's policy is stacks/shared/fleet's, not a stacks/agent-policies/ stack:
 # its system integration writes to the platform workspace.
 OTHER_POLICIES = {"fleet-server-policy": "platform"}
 # Every policy's system integration writes metrics-system.*-<namespace>,
@@ -104,7 +104,7 @@ def fresh_metrics(ctx, key, es):
 def main():
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--inventory", required=True, help="ansible-inventory --list output, or - for stdin")
-    p.add_argument("--policies", default=POLICIES, help="the agent-policies directory")
+    p.add_argument("--policies", default=POLICIES, help="the stacks/agent-policies directory")
     p.add_argument("--kibana", default=KIBANA)
     p.add_argument("--elasticsearch", default=ELASTICSEARCH)
     p.add_argument("--cacert", default=CA_CERT)
@@ -147,7 +147,7 @@ def main():
             rc = 1
         namespace = namespaces.get(policy)
         if namespace is None:
-            print(f"FAIL  {host}: policy {policy} has no system integration (or no agent-policies/{policy})")
+            print(f"FAIL  {host}: policy {policy} has no system integration (or no stacks/agent-policies/{policy})")
             rc = 1
         elif namespace in fresh.get(host, set()):
             print(f"ok    {host}: host metrics in Elasticsearch, namespace {namespace}, in the last {FRESH_MINUTES} minutes")

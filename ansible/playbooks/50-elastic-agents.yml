@@ -1,8 +1,8 @@
 ---
 # Every VM except Fleet Server's (40), into its host group's agent policy
-# (agent-policies/<group>/, elastic_agent_policy_id). Skipped, with a
+# (stacks/agent-policies/<group>/, elastic_agent_policy_id). Skipped, with a
 # message, until that policy exists: run site.yml again after applying
-# agent-policies/ (roles/elastic_agent).
+# stacks/agent-policies/ (roles/elastic_agent).
 - name: Elastic Agents
   hosts: all:!fleet_server
   gather_facts: false

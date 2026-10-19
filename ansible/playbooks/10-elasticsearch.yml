@@ -62,7 +62,7 @@
       no_log: true
 
     # remote_monitoring_user: the stack-monitoring integrations log in as it
-    # (agent-policies/elasticsearch, shared/fleet), with the same password,
+    # (stacks/agent-policies/elasticsearch, stacks/shared/fleet), with the same password,
     # which OpenTofu reads from the same file.
     - name: Check whether remote_monitoring_user authenticates with its password
       ansible.builtin.uri:

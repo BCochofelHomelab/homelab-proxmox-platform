@@ -152,7 +152,7 @@ repos:
         language: python
         entry: python scripts/check_contract.py
         additional_dependencies: ["pyyaml==6.0.3"]
-        files: ^(platform/|apps/|shared/|workspaces/|agent-policies/|ansible/inventory/group_vars/|scripts/check_contract\.py$)
+        files: ^(stacks/|ansible/inventory/group_vars/|scripts/check_contract\.py$)
         pass_filenames: false
 
   # OpenTofu formatting, validation, docs, linting and policy, run with
