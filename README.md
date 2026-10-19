@@ -102,7 +102,10 @@ mise run ansible:site        # every platform VM; extra args after --
 ```
 
 `tofu:*` run every stack below where you run them, in order: from the
-repo root, all of them; from `platform/elastic`, that one. Ansible finds
+repo root, all of them; from `platform/elastic`, that one. The Elastic
+stacks write with one API key, `ELASTICSEARCH_API_KEY`, scoped to what
+they manage: how it's created, checked and rotated is
+[`docs/ELASTIC-API-KEY.md`](docs/ELASTIC-API-KEY.md). Ansible finds
 the VMs in Proxmox by tag (`ansible/inventory/platform.proxmox.yml`), with
 its own read-only token.
 
