@@ -13,6 +13,14 @@ whose conventions and guardrails this repository follows.
 | `ingest` | `.34` | Logstash and the EDOT gateway |
 | `otel-demo` | `.35` | The OpenTelemetry demo |
 
+## Architecture
+
+![Platform architecture](docs/diagrams/architecture.png)
+
+Editable source: [`docs/diagrams/architecture.drawio`](docs/diagrams/architecture.drawio)
+(open in [app.diagrams.net](https://app.diagrams.net) or the draw.io desktop
+app; export the PNG next to it after a change).
+
 ## How it's organized
 
 Observability is offered as **workspaces**: a workspace is a Kibana space
