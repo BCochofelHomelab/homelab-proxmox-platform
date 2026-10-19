@@ -88,8 +88,16 @@
 
 # -- Install (servers flavor) and/or enroll ---------------------------------------
 
+# A dry-run (--check) creates no service token and downloads nothing: it
+# reports the install or enrollment as a change instead.
+- name: Report the enrollment a real run would do
+  ansible.builtin.debug:
+    msg: "Check mode: Fleet Server would be {{ 'installed (servers flavor) and ' if _fleet_reinstall else '' }}enrolled, with a new service token."
+  changed_when: true
+  when: _fleet_enroll and ansible_check_mode
+
 - name: Install and enroll as Fleet Server
-  when: _fleet_enroll
+  when: _fleet_enroll and not ansible_check_mode
   block:
     # A fresh token each enrollment: drop one left by an earlier attempt.
     - name: Delete a leftover enrollment service token

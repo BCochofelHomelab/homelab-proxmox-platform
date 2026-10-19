@@ -142,6 +142,24 @@ agent (`online`), with retries. `scripts/check_contract.py` also checks
 `.tf` namespace literals and `elastic_agent_policy_id`s. Rules run with
 OpenTofu's API key: it needs read on the data streams.
 
+Dry-run (core's, SRE-AI.md A10): `.github/workflows/dry-run.yml` (the
+human's to commit) runs `mise run ci:plan` (every stack, `terramate run
+--continue-on-error`, `-refresh=false`, never `-out`) and `ci:check`
+(`site.yml --check --diff`) on core's runner01 after the `dry-run`
+environment's approval, as `ci`: `ci/dry-run.sops.yaml` (human + ci keys:
+`TF_VAR_proxmox_api_token` ci@pve!plan, `TF_VAR_cipassword`,
+`TF_TOKEN_app_terraform_io`, a read-only `ELASTICSEARCH_API_KEY`,
+`PROXMOX_TOKEN_SECRET`) and `ci/ssh_ed25519.key.sops` (core's automation
+key; its public half in `roles/ci_ssh_key`, play `01-ci-ssh-key.yml`).
+Both tasks denied to the agent. `site.yml`'s first play refuses a real
+run where `HOMELAB_DRY_RUN=1`. Check mode: `uri` is skipped under
+`--check`, and a later task templated from its result fails, so a
+read-only one gets `check_mode: false # read-only: ...`; a download,
+unpack or enrollment block gets `and not ansible_check_mode`, after a
+`debug` with `changed_when: true` saying what a real run would do;
+version asserts get `ignore_errors: "{{ ansible_check_mode }}"` (a
+version bump isn't installed by a dry-run).
+
 Releases: semantic-release as core's (`.releaserc.js`, `package.json`,
 `package-lock.json` copied from core; `release.yml` is the human's to
 commit), tags `X.Y.Z` with no `v`, first release `1.0.0`.

@@ -1,0 +1,9 @@
+---
+# Lets the CI dry-run runner connect as the user Ansible uses on each VM
+# (ubuntu, ansible.cfg's remote_user), next to your own key. Core's
+# template has it for VMs cloned since it was added; this covers any other.
+- name: Authorize the CI dry-run runner's key
+  ansible.posix.authorized_key:
+    user: "{{ ansible_user | default('ubuntu') }}"
+    key: "{{ ci_ssh_public_key }}"
+    state: present

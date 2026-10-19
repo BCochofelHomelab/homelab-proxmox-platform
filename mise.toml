@@ -308,6 +308,49 @@ site() {
   exec sops exec-env ~/.secrets/homelab.yaml "ansible-playbook playbooks/site.yml$args"
 }; site'''
 
+# The dry-run, as ci: the CI runner's identity (homelab-proxmox-core's
+# runner01, the dry-run environment), shared with you so a dry-run can be
+# repeated from your clone, and denied to the AI agent. The ci key comes
+# from SOPS_AGE_KEY in CI (the environment's CI_AGE_KEY secret, never
+# written to disk) or from its file on your machine. Its credentials are
+# ci/dry-run.sops.yaml (you + ci): read-only Proxmox, Elastic and inventory
+# tokens, and HCP's team token (an accepted risk, core's docs/CREDENTIALS.md).
+
+# Every stack, in order, as tofu:plan but -refresh=false (refreshing a VM
+# needs VM.Config.Disk, a write privilege ci@pve!plan lacks) and never
+# saving a plan. --continue-on-error plans every stack and still fails the
+# run if one failed; `terramate: Entering stack in /<path>` names each.
+[tasks."ci:plan"]
+description = "Plan every stack as ci (ci/dry-run.sops.yaml with the ci key), without refreshing; never saves a plan"
+dir = "{{config_root}}"
+shell = "bash -c"
+run = '''
+[ -n "$SOPS_AGE_KEY" ] || export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/ci.txt"
+exec sops exec-env ci/dry-run.sops.yaml 'terramate run --continue-on-error -- sh -c "tofu init -input=false -no-color >/dev/null && tofu plan -refresh=false -input=false -no-color -lock-timeout=5m"'
+'''
+
+# site.yml --check --diff on every platform VM, as ci: the automation SSH
+# key (ci/ssh_ed25519.key.sops, core's, decrypted into a temporary
+# directory for this run only), the inventory token from
+# ci/dry-run.sops.yaml, the inventory secrets with the ci key. Extra args
+# go to ansible-playbook, as ansible:site's.
+[tasks."ci:check"]
+description = "Dry-run site.yml as ci (--check --diff): the ci key, the automation SSH key, the inventory token from ci/dry-run.sops.yaml. Extra args after --"
+dir = "{{config_root}}/ansible"
+shell = "bash -c"
+run = '''
+check() {
+  set -eo pipefail
+  [ -n "$SOPS_AGE_KEY" ] || export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/ci.txt" ANSIBLE_SOPS_AGE_KEYFILE="$HOME/.config/sops/age/ci.txt"
+  tmp=$(mktemp -d "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/ansible-check.XXXXXX")
+  trap 'rm -rf "$tmp"' EXIT
+  sops decrypt --input-type binary --output-type binary ../ci/ssh_ed25519.key.sops >"$tmp/ssh_key"
+  chmod 600 "$tmp/ssh_key"
+  args=""
+  [ $# -eq 0 ] || args=$(printf ' %q' "$@")
+  ANSIBLE_PRIVATE_KEY_FILE="$tmp/ssh_key" sops exec-env ../ci/dry-run.sops.yaml "ansible-playbook playbooks/site.yml --check --diff$args"
+}; check'''
+
 # The internal CA, once: ansible/pki/elastic-ca.crt (commit it) and
 # elastic-ca.key.sops, encrypted to your key and the ci key (.sops.yaml).
 # The key is generated in memory and piped into SOPS, never written in
