@@ -194,7 +194,7 @@ Elasticsearch.
 The only credential that writes to Elastic, scoped to what the stacks
 manage: [`ELASTIC-API-KEY.md`](ELASTIC-API-KEY.md), *Creating it* and
 *Checking it*. It goes in `~/.secrets/homelab.yaml` as
-`ELASTICSEARCH_API_KEY`, and expires after 90 days: set the reminder.
+`ELASTICSEARCH_API_KEY`, and expires after 365 days: set the reminder.
 
 *Check:* that page's `_has_privileges` answer.
 
@@ -327,7 +327,7 @@ repository:
      POST /_security/api_key
      {
        "name": "ci-plan-homelab-proxmox-platform-<yyyy-mm>",
-       "expiration": "90d",
+       "expiration": "365d",
        "role_descriptors": {
          "ci-plan": {
            "cluster": ["monitor"],
@@ -349,8 +349,11 @@ repository:
      ```
 
 2. **The automation key on the VMs:** `ci_ssh_key` (in `site.yml`) puts
-   its public half on every VM, at every `ansible:site`. Core's template
-   already has it for VMs cloned since 2026-10-12.
+   its public half on every VM, at every `ansible:site`: a clone of
+   core's template doesn't have it (checked 2026-10-19: none of the six
+   did), so run `mise run ansible:site` once, from `main`, before the
+   first dry-run, and before committing the workflow (step 4): a
+   dry-run's `ci:check` can't reach a VM without the key.
 3. **The `dry-run` environment** (*Settings → Environments*), as core's:
    *Required reviewers* `sre-lead`, *Prevent self-review* off, *Allow
    administrators to bypass* **off**, no deployment branch restriction,
@@ -378,8 +381,8 @@ SETUP.md, *Output: the logs are public*).
 
 | What | Lifetime | Renew |
 | --- | --- | --- |
-| OpenTofu's Elastic API key | 90 days | [`ELASTIC-API-KEY.md`](ELASTIC-API-KEY.md), *Rotating it* (the rules are re-keyed too) |
-| The CI plan's Elastic API key | 90 days | A new one (stage 10), in `ci/dry-run.sops.yaml`, then invalidate the old |
+| OpenTofu's Elastic API key | 365 days (the current one: 2027-10-19) | [`ELASTIC-API-KEY.md`](ELASTIC-API-KEY.md), *Rotating it* (the rules are re-keyed too) |
+| The CI plan's Elastic API key | 365 days (`ci-plan-homelab-proxmox-platform-2026-10`: 2027-10-19) | A new one (stage 10), in `ci/dry-run.sops.yaml`, then invalidate the old |
 | The agents' client certificate | 2 years | Stage 4, step 2, then `tofu:apply` in `shared/fleet` |
 | The internal CA | 10 years | Stage 4, step 1, every host's certificate again (`ansible:site`), and core's copy |
 

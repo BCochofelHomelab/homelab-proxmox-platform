@@ -30,6 +30,8 @@
       "Bash(mise *tofu:plan*)",
       "Bash(mise *tofu:apply*)",
       "Bash(mise *ansible:site*)",
+      "Bash(mise *ci:plan*)",
+      "Bash(mise *ci:check*)",
       "Bash(mise *check:telemetry*)",
       "Bash(mise *pki:*)",
       "Bash(mise sops*)",

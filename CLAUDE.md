@@ -106,7 +106,12 @@ v9.5.4's source), `shared/fleet` (packages `fleet_server` 1.6.1, `system`
 below). Order: `shared/data` and `shared/security` after
 `/platform/elastic`, `shared/fleet` after `/shared/data`. Elastic stacks
 get a comment-only generated `variables.tf` (TFLint). The OpenTofu API key
-is the human's (`ELASTICSEARCH_API_KEY` in `homelab.yaml`).
+is the human's (`ELASTICSEARCH_API_KEY` in `homelab.yaml`), scoped in
+`docs/ELASTIC-API-KEY.md` (monitor, manage_ilm, manage_index_templates,
+manage_security; read on logs/metrics/traces; Kibana `all` on `*`, which
+spaces need): a resource type needing another privilege updates that
+page's table and request. Rules created with it keep it (Kibana 9.5.4),
+so rotating it runs `scripts/elastic_rekey_rules.py`.
 
 Agent policies and workspaces (PR 10): `agent-policies/<group>/`
 (`elasticsearch`, `ingest`, `otel-demo`; and core's hosts: `core` for proxy
@@ -136,6 +141,24 @@ the host until the policy exists; the health check polls Fleet for every
 agent (`online`), with retries. `scripts/check_contract.py` also checks
 `.tf` namespace literals and `elastic_agent_policy_id`s. Rules run with
 OpenTofu's API key: it needs read on the data streams.
+
+Dry-run (core's, SRE-AI.md A10): `.github/workflows/dry-run.yml` (the
+human's to commit) runs `mise run ci:plan` (every stack, `terramate run
+--continue-on-error`, `-refresh=false`, never `-out`) and `ci:check`
+(`site.yml --check --diff`) on core's runner01 after the `dry-run`
+environment's approval, as `ci`: `ci/dry-run.sops.yaml` (human + ci keys:
+`TF_VAR_proxmox_api_token` ci@pve!plan, `TF_VAR_cipassword`,
+`TF_TOKEN_app_terraform_io`, a read-only `ELASTICSEARCH_API_KEY`,
+`PROXMOX_TOKEN_SECRET`) and `ci/ssh_ed25519.key.sops` (core's automation
+key; its public half in `roles/ci_ssh_key`, play `01-ci-ssh-key.yml`).
+Both tasks denied to the agent. `site.yml`'s first play refuses a real
+run where `HOMELAB_DRY_RUN=1`. Check mode: `uri` is skipped under
+`--check`, and a later task templated from its result fails, so a
+read-only one gets `check_mode: false # read-only: ...`; a download,
+unpack or enrollment block gets `and not ansible_check_mode`, after a
+`debug` with `changed_when: true` saying what a real run would do;
+version asserts get `ignore_errors: "{{ ansible_check_mode }}"` (a
+version bump isn't installed by a dry-run).
 
 Releases: semantic-release as core's (`.releaserc.js`, `package.json`,
 `package-lock.json` copied from core; `release.yml` is the human's to

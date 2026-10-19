@@ -13,6 +13,14 @@ whose conventions and guardrails this repository follows.
 | `ingest` | `.34` | Logstash and the EDOT gateway |
 | `otel-demo` | `.35` | The OpenTelemetry demo |
 
+## Architecture
+
+![Platform architecture](docs/diagrams/architecture.png)
+
+Editable source: [`docs/diagrams/architecture.drawio`](docs/diagrams/architecture.drawio)
+(open in [app.diagrams.net](https://app.diagrams.net) or the draw.io desktop
+app; export the PNG next to it after a change).
+
 ## How it's organized
 
 Observability is offered as **workspaces**: a workspace is a Kibana space
@@ -94,7 +102,10 @@ mise run ansible:site        # every platform VM; extra args after --
 ```
 
 `tofu:*` run every stack below where you run them, in order: from the
-repo root, all of them; from `platform/elastic`, that one. Ansible finds
+repo root, all of them; from `platform/elastic`, that one. The Elastic
+stacks write with one API key, `ELASTICSEARCH_API_KEY`, scoped to what
+they manage: how it's created, checked and rotated is
+[`docs/ELASTIC-API-KEY.md`](docs/ELASTIC-API-KEY.md). Ansible finds
 the VMs in Proxmox by tag (`ansible/inventory/platform.proxmox.yml`), with
 its own read-only token.
 
