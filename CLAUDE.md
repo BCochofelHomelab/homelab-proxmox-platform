@@ -109,9 +109,12 @@ get a comment-only generated `variables.tf` (TFLint). The OpenTofu API key
 is the human's (`ELASTICSEARCH_API_KEY` in `homelab.yaml`).
 
 Agent policies and workspaces (PR 10): `agent-policies/<group>/`
-(`elasticsearch`, `ingest`, `otel-demo`; tags `elastic`, `agent-policy`,
+(`elasticsearch`, `ingest`, `otel-demo`; and core's hosts: `core` for proxy
+and server01 with system + docker, `core-runner` for runner01 with system
+only since Docker is masked there, `proxmox` for pve1, all into workspace
+`core`; core's Ansible installs and enrolls those agents; tags `elastic`, `agent-policy`,
 `fleet`; after `/shared/fleet`) hold `agent-policy.yaml`;
-`workspaces/<id>/` (`platform`, `otel_demo`; tags `elastic`, `workspace`;
+`workspaces/<id>/` (`platform`, `otel_demo`, `core`; tags `elastic`, `workspace`;
 after `tag:shared`) hold `workspace.yaml`, optional `dashboards/`,
 `rules/`. Both read their YAML at plan time (`yamldecode(file())`), so
 `tofu validate` catches YAML errors; only `module_ref` is read by
@@ -119,7 +122,8 @@ Terramate (a module source can't be an expression; `lets` are evaluated
 in every stack, hence `tm_try`). Their `main.tf` and `outputs.tf` are
 hand-written (TFLint wants them, and generating a name other stacks write
 by hand breaks `terramate run`). Package versions: `global.fleet_packages`,
-generated as `local.fleet_packages` into stacks tagged `fleet`. The
+generated as `local.fleet_packages` into stacks tagged `fleet`;
+`shared/fleet` installs every one (`elasticstack_fleet_integration.packages`). The
 platform workspace's `unknown_namespace` rule is generated from
 `terramate.stacks.list` (every workspace id; Fleet Server's `fleet_server.*`
 datasets excluded). `shared/fleet` has the Logstash output (default, after
