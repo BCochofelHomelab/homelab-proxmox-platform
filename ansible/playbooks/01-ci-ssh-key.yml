@@ -1,0 +1,8 @@
+---
+# The CI dry-run runner's automation key on every VM, so `mise run ci:check`
+# can reach them (homelab-proxmox-core's 01-ci-ssh-key.yml).
+- name: CI dry-run runner's SSH key
+  hosts: all
+  gather_facts: false
+  roles:
+    - ci_ssh_key

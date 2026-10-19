@@ -1,0 +1,6 @@
+---
+# Public half of the CI dry-run runner's automation key, the same one as
+# homelab-proxmox-core's (its ci_ssh_key role and Packer template). The
+# private half is ci/ssh_ed25519.key.sops, encrypted to you and the ci key
+# only; never in the devcontainer.
+ci_ssh_public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL+FmfkSfvtETck4FBLW+y7iPdJ7pcBidbVGJCzYKvLH ci@homelab (dry-run runner)"

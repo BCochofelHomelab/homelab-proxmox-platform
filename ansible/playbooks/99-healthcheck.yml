@@ -22,6 +22,9 @@
         that: _es_root.json.version.number == elastic_version
         fail_msg: "{{ inventory_hostname }} runs {{ _es_root.json.version.number }}, expected {{ elastic_version }}."
         quiet: true
+      # A dry-run upgrades nothing: a version this pull request sets is
+      # reported (ignored=), not required.
+      ignore_errors: "{{ ansible_check_mode }}"
 
     - name: Wait for the cluster to be green with every node
       ansible.builtin.uri:
@@ -78,6 +81,9 @@
         that: _kibana_status.json.version.number == elastic_version
         fail_msg: "Kibana runs {{ _kibana_status.json.version.number }}, expected {{ elastic_version }}."
         quiet: true
+      # A dry-run upgrades nothing: a version this pull request sets is
+      # reported (ignored=), not required.
+      ignore_errors: "{{ ansible_check_mode }}"
 
     # Through core's Caddy (homelab-proxmox-core): an external dependency,
     # so reported without failing the playbook.
@@ -112,6 +118,9 @@
         that: _logstash_pipeline.json.version == elastic_version
         fail_msg: "Logstash runs {{ _logstash_pipeline.json.version }}, expected {{ elastic_version }}."
         quiet: true
+      # A dry-run upgrades nothing: a version this pull request sets is
+      # reported (ignored=), not required.
+      ignore_errors: "{{ ansible_check_mode }}"
 
     # From the controller, like an agent: the port answers and presents a
     # certificate that verifies against the internal CA.
@@ -164,6 +173,9 @@
         that: (edot_version ~ ' ') in _edot_version.stdout
         fail_msg: "The EDOT Collector runs {{ _edot_version.stdout }}, expected {{ edot_version }}."
         quiet: true
+      # A dry-run upgrades nothing: a version this pull request sets is
+      # reported (ignored=), not required.
+      ignore_errors: "{{ ansible_check_mode }}"
 
     # An empty OTLP export, from the gateway's own host with its own
     # certificate (CA-signed, clientAuth): accepted.
