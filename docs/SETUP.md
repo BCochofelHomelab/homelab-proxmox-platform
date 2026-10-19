@@ -77,13 +77,14 @@ Default execution mode → Local*. Otherwise set each new workspace to
 *Local* (*Workspace → Settings → General*) right after its first
 `tofu:init`.
 
-The ten workspaces, created in stages 3, 6 and 7:
+The fourteen workspaces, created in stages 3, 7 and 8:
 
 ```text
-platform-platform-elastic            platform-apps-otel-demo
-platform-shared-security             platform-shared-data          platform-shared-fleet
-platform-agent-policies-elasticsearch  platform-agent-policies-ingest  platform-agent-policies-otel-demo
-platform-workspaces-platform         platform-workspaces-otel_demo
+platform-platform-elastic              platform-apps-otel-demo
+platform-shared-security               platform-shared-data             platform-shared-fleet
+platform-agent-policies-elasticsearch  platform-agent-policies-ingest   platform-agent-policies-otel-demo
+platform-agent-policies-core           platform-agent-policies-core-runner  platform-agent-policies-proxmox
+platform-workspaces-platform           platform-workspaces-otel_demo    platform-workspaces-core
 ```
 
 *Check* (after each stage that creates some): every `platform-*`
@@ -215,20 +216,56 @@ health check; *Kibana → Fleet → Agents*: one agent, `kibana`, Healthy.
 
 ## Stage 8. Agent policies and workspaces, then the agents
 
+Six host groups and three workspaces:
+
+| Agent policy (`agent-policies/<id>`) | Hosts | Integrations | Data in workspace |
+| --- | --- | --- | --- |
+| `elasticsearch` | `es-01`–`es-03` | system, Elasticsearch (stack monitoring) | `platform` |
+| `ingest` | `ingest` | system, Logstash (stack monitoring) | `platform` |
+| `otel-demo` | `otel-demo` | system | `otel_demo` |
+| `core` | core's `proxy`, `server01` | system, Docker | `core` |
+| `core-runner` | core's `runner01` (no Docker: it's masked there) | system | `core` |
+| `proxmox` | `pve1`, the Proxmox VE host | system | `core` |
+
+(`kibana` is on `fleet-server-policy`, `shared/fleet`'s.) This repo's
+Ansible enrolls the platform VMs; **core's Ansible enrolls core's hosts**,
+with an enrollment token you copy from Fleet.
+
 ```bash
 for d in agent-policies workspaces; do (cd $d && mise run tofu:init && mise run tofu:plan); done
 # review, then:
 for d in agent-policies workspaces; do (cd $d && mise run tofu:apply); done
-mise run ansible:site      # every VM's agent enrolls into its host group's policy
+mise run ansible:site      # every platform VM's agent enrolls into its host group's policy
 ```
+
+Then **core's hosts**:
+
+1. Copy the three enrollment tokens: *Kibana → Fleet → Enrollment
+   tokens*, one each for *Homelab core*, *Homelab core runner* and
+   *Proxmox*.
+2. Put each in core's `ansible/inventory/group_vars/<group>.sops.yaml`
+   (your key and the `ci` key), in the file core's AI agent names for
+   it: tokens are secrets, never pasted to the agent.
+3. Core's `mise run ansible:site` installs Elastic Agent 9.5.4 on `proxy`,
+   `server01`, `runner01` and `pve1` and enrolls each into its policy,
+   trusting this repo's CA (core's `ansible/files/trust/platform-elastic.crt`).
+
+A rebuild from nothing is a new Fleet: core's agents' credentials and the
+old tokens are gone, and core's Ansible never enrolls an agent that's
+already managed (that would register a duplicate). So uninstall each one
+first (`sudo elastic-agent uninstall --force` on the host), then repeat
+steps 1 to 3.
 
 Then your own Kibana user (*Stack Management → Users*), so `elastic`
 stays for setup and recovery: `platform-admin` covers every space, or the
 workspaces' `workspace-<id>-editor` / `-viewer` roles.
 
-*Check:* five new workspaces *Local*; the health check waits until every
-agent is online in Fleet; *Kibana → Fleet → Agents*: six agents, all
-Healthy; *Stack Monitoring*: the cluster's 3 nodes, Kibana and Logstash.
+*Check:* nine new workspaces *Local*; the health check waits until every
+platform VM's agent is online in Fleet; *Kibana → Fleet → Agents*: ten
+agents, all Healthy, once core's hosts are enrolled; *Stack Monitoring*:
+the cluster's 3 nodes, Kibana and Logstash; the *Core* space shows host
+metrics from core's four hosts, and container metrics and logs from
+`proxy` and `server01`.
 
 ## Stage 9. The AI agent (optional)
 
