@@ -45,7 +45,9 @@ Short-lived branches off `main`, deleted after merge, named
 [Conventional Commits](https://www.conventionalcommits.org/), checked by
 commitlint ([`commitlint.config.js`](commitlint.config.js)):
 `<type>(optional scope): <subject>`, with type `feat`, `fix`, `docs`,
-`style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore` or `revert`.
+`style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore` or `revert`,
+lowercase: anything else is refused, `Fix:` included (the release reads
+only `fix` and `feat`, so a capital silently skips the release).
 `git commit` without `-m` opens the repo's template.
 
 Every merge to `main` runs
@@ -59,7 +61,13 @@ commits since the last release, the same way as `homelab-proxmox-core`:
 
 It publishes a GitHub Release with generated notes and a tag, `X.Y.Z`
 with no `v`. No changelog file and no commit back to `main`. With squash
-merges, the pull request's title is the commit it reads.
+merges, the pull request's title is the commit it reads (the repository
+squashes with the title, single-commit pull requests too), so:
+
+- **The title takes the highest type of its commits:** `feat` if any
+  commit is a feature, else `fix` if any is a fix, else the rest. A pull
+  request titled `refactor:` that adds a feature releases nothing.
+- CI checks the title with the same commitlint rules.
 
 ## Checks
 
