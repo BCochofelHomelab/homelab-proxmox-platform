@@ -84,49 +84,82 @@ Folders hold data; Terramate generates the code (`stacks/*.tm.hcl`,
 `terramate generate`, then `mise run lint`: the contract check fails a
 namespace or a policy id that names nothing.
 
-## Getting started
+## Quickstart
 
-Everything a contributor needs, from a clone, on Linux (Ubuntu or WSL2):
+### Set up a clone
+
+On Linux (Ubuntu or WSL2):
 
 ```bash
 mise trust && mise install   # the pinned toolchain, Ansible in .venv, git hooks
-mise run check               # what CI runs
+mise run check               # what CI runs: every pre-commit hook, gitleaks
 ```
 
-Applying (yours only: each runs one command with
-`~/.secrets/homelab.yaml`):
+The repository, at a glance:
+
+| Path | What |
+| --- | --- |
+| `stacks/` | Every OpenTofu stack (one state each), and the Terramate generators (`*.tm.hcl`) that write their backends, providers and repeated code |
+| `ansible/` | Configures the VMs: inventory from Proxmox, roles, playbooks (`site.yml`), the internal CA (`pki/`) |
+| `scripts/` | The repo's own checks (the contract, telemetry, re-keying rules) |
+| `docs/` | How it's set up ([`SETUP.md`](docs/SETUP.md)), OpenTofu's Elastic key, the diagram |
+| `terramate.tm.hcl` | Terramate's settings and the shared values (provider pins, endpoints) |
+
+### Make a change
+
+1. A branch and a pull request (rules: [`CONTRIBUTING.md`](CONTRIBUTING.md)).
+   After `terramate generate`, `mise run lint` must pass.
+2. The **dry-run** comments on the pull request, once you approve its
+   `dry-run` environment: each stack's plan line and the Ansible recap. The
+   same, from your clone: `mise run ci:plan` and `mise run ci:check`.
+3. Merge, then apply from your clone, on an up-to-date `main`.
+
+### Apply (yours only)
+
+Each task runs one command with `~/.secrets/homelab.yaml`:
 
 ```bash
-mise run tofu:init           # every stack under the current directory
-mise run tofu:plan           # each saved to its stack's tfplan: review it
-mise run tofu:apply          # applies those plans
-mise run ansible:site        # every platform VM; extra args after --
+mise run tofu:plan           # the stacks the last merge changed, each saved to its tfplan: review it
+mise run tofu:apply          # applies exactly those plans
+mise run ansible:site        # every platform VM; extra args after -- (--limit, --check --diff)
 ```
 
-`tofu:*` run every stack below where you run them, in order: from the
-repo root, all of them; from `stacks/platform/elastic`, that one. The Elastic
-stacks write with one API key, `ELASTICSEARCH_API_KEY`, scoped to what
-they manage: how it's created, checked and rotated is
-[`docs/ELASTIC-API-KEY.md`](docs/ELASTIC-API-KEY.md). Ansible finds
-the VMs in Proxmox by tag (`ansible/inventory/platform.proxmox.yml`), with
-its own read-only token.
+What `tofu:plan` plans:
 
-What runs where: Elasticsearch, Kibana and Logstash from Elastic's DEB
-packages; Fleet Server and the EDOT Collector gateway from Elastic's
-signed Elastic Agent tarball; the OpenTelemetry demo in Docker Compose.
-TLS inside the stack comes from an internal CA (`mise run pki:init`,
-once). Ansible's secrets are in `ansible/inventory/group_vars/<group>.sops.yaml`,
-one file per group that needs them. Fleet Server follows `stacks/shared/fleet`, and each
-VM's Elastic Agent its host group's `stacks/agent-policies/<group>`: an
-`ansible:site` before those exist skips them with a message, the one after
-sets them up.
+- **On `main`, the stacks the previous commit changed**, which is the last
+  squash-merged pull request. A stack also counts as changed when a file
+  outside it that it reads does (its `watch` list in `stack.tm.hcl`: the CA,
+  `elastic.sops.yaml`), or when Terramate regenerates its code.
+- **Merged several pull requests since the last apply:** plan from the
+  commit before them, `mise run tofu:plan -- --git-change-base=<commit>`.
+- **Every stack** (a rebuild, or checking nothing drifted):
+  `mise run tofu:plan -- --all`.
+- **Only part of the repo:** run it from that folder; `stacks/shared`
+  plans only `shared/*`.
 
-Every VM reporting its telemetry (its agent online in Fleet, its metrics
-in Elasticsearch): `mise run check:telemetry`, read-only.
+Every plan replaces the previous one: `tofu:apply` applies the stacks that
+have a `tfplan` and removes each once applied. `mise run tofu:init` runs on
+every stack: once per clone, and after a provider or module version changes.
 
-Building it from nothing, or rebuilding it, in order, with everything
-configured by hand (Proxmox, HCP Terraform, Elastic, GitHub, the secret
-files): [`docs/SETUP.md`](docs/SETUP.md).
+### Check it's healthy
 
-How a change flows, and the rules it follows:
-[`CONTRIBUTING.md`](CONTRIBUTING.md).
+```bash
+mise run check:telemetry     # every host: its agent online in Fleet, its metrics arriving (read-only)
+```
+
+### More
+
+- What runs where: Elasticsearch, Kibana and Logstash from Elastic's DEB
+  packages; Fleet Server and the EDOT Collector gateway from Elastic's
+  signed Elastic Agent tarball; the OpenTelemetry demo in Docker Compose.
+  TLS inside the stack comes from an internal CA. Ansible finds the VMs in
+  Proxmox by tag (`ansible/inventory/platform.proxmox.yml`), with its own
+  read-only token; its secrets are in
+  `ansible/inventory/group_vars/<group>.sops.yaml`, one file per group.
+- Fleet Server follows `stacks/shared/fleet`, and each VM's Elastic Agent its
+  host group's `stacks/agent-policies/<group>`: an `ansible:site` before
+  those exist skips them with a message, the one after sets them up.
+- The Elastic stacks write with one API key, scoped to what they manage:
+  [`docs/ELASTIC-API-KEY.md`](docs/ELASTIC-API-KEY.md).
+- Building it from nothing, or rebuilding it, with everything configured by
+  hand: [`docs/SETUP.md`](docs/SETUP.md).

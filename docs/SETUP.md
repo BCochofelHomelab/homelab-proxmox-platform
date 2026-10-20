@@ -103,14 +103,16 @@ The two VM stacks (tag `proxmox`), from their own directories so only
 they run:
 
 ```bash
-for d in stacks/platform stacks/apps; do (cd $d && mise run tofu:init && mise run tofu:plan); done
+for d in stacks/platform stacks/apps; do (cd $d && mise run tofu:init && mise run tofu:plan -- --all); done
 # review both plans, then:
 for d in stacks/platform stacks/apps; do (cd $d && mise run tofu:apply); done
 ```
 
 `tofu:plan` saves each plan to its stack's `tfplan`, and `tofu:apply`
-applies only that, so what you reviewed is what's applied. The same
-pattern holds in every later stage: plan, review, apply.
+applies only those, so what you reviewed is what's applied. On its own,
+`tofu:plan` plans only the stacks the last change touched (the README's
+*Quickstart*); a build from nothing plans every stack, hence `-- --all`.
+The same pattern holds in every later stage: plan, review, apply.
 
 *Check:* six VMs running in Proxmox, `es-01`–`es-03`, `kibana`,
 `ingest` and `otel-demo`, each tagged `platform`, at `192.168.68.30`–`.35`;
@@ -201,7 +203,7 @@ manage: [`ELASTIC-API-KEY.md`](ELASTIC-API-KEY.md), *Creating it* and
 ## Stage 7. The shared stacks, then Fleet Server
 
 ```bash
-(cd stacks/shared && mise run tofu:init && mise run tofu:plan)   # review, then:
+(cd stacks/shared && mise run tofu:init && mise run tofu:plan -- --all)   # review, then:
 (cd stacks/shared && mise run tofu:apply)
 mise run ansible:site      # Fleet Server enrolls into fleet-server-policy
 ```
@@ -232,7 +234,7 @@ Ansible enrolls the platform VMs; **core's Ansible enrolls core's hosts**,
 with an enrollment token you copy from Fleet.
 
 ```bash
-for d in stacks/agent-policies stacks/workspaces; do (cd $d && mise run tofu:init && mise run tofu:plan); done
+for d in stacks/agent-policies stacks/workspaces; do (cd $d && mise run tofu:init && mise run tofu:plan -- --all); done
 # review, then:
 for d in stacks/agent-policies stacks/workspaces; do (cd $d && mise run tofu:apply); done
 mise run ansible:site      # every platform VM's agent enrolls into its host group's policy
@@ -384,7 +386,7 @@ SETUP.md, *Output: the logs are public*).
 | --- | --- | --- |
 | OpenTofu's Elastic API key | 365 days (the current one: 2027-10-19) | [`ELASTIC-API-KEY.md`](ELASTIC-API-KEY.md), *Rotating it* (the rules are re-keyed too) |
 | The CI plan's Elastic API key | 365 days (`ci-plan-homelab-proxmox-platform-2026-10`: 2027-10-19) | A new one (stage 10), in `ci/dry-run.sops.yaml`, then invalidate the old |
-| The agents' client certificate | 2 years | Stage 4, step 2, then `tofu:apply` in `stacks/shared/fleet` |
+| The agents' client certificate | 2 years | Stage 4, step 2; once merged, `tofu:plan` picks up `stacks/shared/fleet` (it watches the certificate), then `tofu:apply` |
 | The internal CA | 10 years | Stage 4, step 1, every host's certificate again (`ansible:site`), and core's copy |
 
 ## Red button
@@ -405,7 +407,7 @@ From your clone, on `main`:
 
 ```bash
 mise run check            # what CI runs
-mise run tofu:plan        # every stack: No changes
+mise run tofu:plan -- --all   # every stack: No changes
 mise run ansible:site     # failed=0 everywhere; every agent online in Fleet
 mise run check:telemetry  # every VM: agent online, metrics arriving
 mise run ci:plan          # every stack: No changes (stage 10)

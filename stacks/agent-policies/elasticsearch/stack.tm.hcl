@@ -4,4 +4,9 @@ stack {
   tags        = ["elastic", "agent-policy", "fleet"]
   after       = ["/stacks/shared/fleet"]
   id          = "f18d3e47-5761-4516-b8f6-f707d643bb97"
+  # A file outside this folder that it reads ({secret: ...} values): a
+  # change to it marks this stack changed (mise run tofu:plan).
+  watch = [
+    "/ansible/inventory/group_vars/elastic.sops.yaml",
+  ]
 }

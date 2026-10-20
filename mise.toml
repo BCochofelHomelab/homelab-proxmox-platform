@@ -263,11 +263,21 @@ exit $rc
 # explicitly.
 # ---------------------------------------------------------------------------
 
-# OpenTofu, through `terramate run`: every stack under the directory you run
-# it from, in order (`after`), each with its own state. From the repo root,
-# every stack; from stacks/platform/elastic, that one. One sops exec-env holds the
+# OpenTofu, through `terramate run`, under the directory you run it from
+# (the repo root: every stack; stacks/platform/elastic: that one), in order
+# (`after`), each stack with its own state. One sops exec-env holds the
 # credentials for the whole run: TF_TOKEN_app_terraform_io (HCP),
 # TF_VAR_proxmox_api_token, TF_VAR_cipassword and ELASTICSEARCH_API_KEY.
+#
+# tofu:plan plans only the stacks that changed (terramate --changed): on
+# main, since the previous commit, i.e. the last squash-merged pull request;
+# on a branch, since origin/main. A stack also changes when a file it lists
+# in `watch` (stack.tm.hcl) does. Extra arguments go to terramate:
+#   mise run tofu:plan -- --all                          every stack
+#   mise run tofu:plan -- --git-change-base=<commit>     changed since <commit>
+# tofu:apply applies exactly what tofu:plan planned: the stacks with a
+# tfplan, each removed once applied. tofu:init stays on every stack (a fresh
+# clone needs them all).
 
 [tasks."tofu:init"]
 description = "tofu init in every stack under the current directory, against HCP Terraform (read-write: ~/.secrets/homelab.yaml)"
@@ -276,18 +286,45 @@ env = { SOPS_AGE_KEY_FILE = "{{env.HOME}}/.config/sops/age/bcochofel.txt" }
 run = "sops exec-env ~/.secrets/homelab.yaml 'terramate run -- tofu init'"
 
 [tasks."tofu:plan"]
-description = "Plan every stack under the current directory, each saved to its tfplan, the one to review before applying (read-write)"
+description = "Plan the changed stacks under the current directory (-- --all: every stack), each saved to its tfplan for tofu:apply (read-write)"
 dir = "{{cwd}}"
 env = { SOPS_AGE_KEY_FILE = "{{env.HOME}}/.config/sops/age/bcochofel.txt" }
-run = "sops exec-env ~/.secrets/homelab.yaml 'terramate run -- tofu plan -out=tfplan'"
+shell = "bash -c"
+run = '''
+plan() {
+  set -eo pipefail
+  filter=--changed
+  if [ "${1:-}" = --all ]; then filter=; shift; fi
+  args=""
+  for a in $filter "$@"; do args="$args $(printf %q "$a")"; done
+  # A plan replaces every earlier one, so tofu:apply applies exactly this.
+  terramate run --quiet -- rm -f tfplan
+  stacks=$(eval "terramate list$args")
+  if [ -z "$stacks" ]; then
+    echo "No stack changed: nothing to plan. Every stack: mise run tofu:plan -- --all"
+    exit 0
+  fi
+  echo "Planning:"; printf '  %s\n' $stacks
+  exec sops exec-env ~/.secrets/homelab.yaml "terramate run$args -- tofu plan -out=tfplan"
+}; plan'''
 
-# Applies each stack's tfplan, saved by tofu:plan: no confirmation prompt,
-# and tofu refuses a plan that's stale against the current state.
+# Applies each tfplan tofu:plan saved, and only those: no confirmation
+# prompt, and tofu refuses a plan that's stale against the current state.
 [tasks."tofu:apply"]
-description = "Apply every stack's tfplan under the current directory, saved by tofu:plan (read-write: ~/.secrets/homelab.yaml)"
+description = "Apply the tfplans tofu:plan saved under the current directory, each removed once applied (read-write: ~/.secrets/homelab.yaml)"
 dir = "{{cwd}}"
 env = { SOPS_AGE_KEY_FILE = "{{env.HOME}}/.config/sops/age/bcochofel.txt" }
-run = "sops exec-env ~/.secrets/homelab.yaml 'terramate run -- tofu apply tfplan'"
+shell = "bash -c"
+run = '''
+set -eo pipefail
+planned=$(terramate list | while read -r stack; do if [ -f "$stack/tfplan" ]; then echo "$stack"; fi; done)
+if [ -z "$planned" ]; then
+  echo "No tfplan here: run mise run tofu:plan first."
+  exit 0
+fi
+echo "Applying:"; printf '  %s\n' $planned
+exec sops exec-env ~/.secrets/homelab.yaml 'terramate run -- sh -c "if [ -f tfplan ]; then tofu apply tfplan && rm -f tfplan; fi"'
+'''
 
 # The inventory reads Proxmox with inventory@pve!ansible, whose secret
 # (PROXMOX_TOKEN_SECRET) comes from homelab.yaml; Ansible decrypts its own

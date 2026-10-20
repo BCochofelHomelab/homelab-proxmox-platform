@@ -72,7 +72,16 @@ share the host's name), `ansible_host` from cloud-init's `ipconfig0`. Its
 token is `inventory@pve!ansible` (role `AnsibleInventory`); user and token
 id are in the file, only `PROXMOX_TOKEN_SECRET` comes from `homelab.yaml`.
 Without it (the agent), the inventory is empty: `--syntax-check` still
-works. `tofu:*` are `terramate run` from `{{cwd}}`; `ansible:site` passes
+works. `tofu:*` are `terramate run` from `{{cwd}}`: `tofu:plan` plans only
+changed stacks (`--changed`: on main since HEAD^, on a branch since
+origin/main; `-- --all` every stack, `-- --git-change-base=<ref>`), after
+deleting every old `tfplan`; `tofu:apply` applies the stacks with a
+`tfplan` and removes it; `tofu:init` runs every stack. A stack that reads a
+file outside its folder lists it in `watch` (stack.tm.hcl: shared/fleet the
+CA, agent-client.crt/.key.sops and elastic.sops.yaml; every agent policy
+elastic.sops.yaml), or a change to that file plans nothing. Docs that build
+or check everything use `-- --all`. `ci:plan` stays on every stack (the
+runner has no origin/main). `ansible:site` passes
 extra args through `printf %q` inside the `sops exec-env` command, only
 when there are some (`printf '%q '` with none prints `''`).
 

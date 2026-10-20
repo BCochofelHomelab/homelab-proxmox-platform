@@ -139,7 +139,7 @@ printf "Authorization: ApiKey %s\n" "$ELASTICSEARCH_API_KEY" |
 Expect `"has_all_requested": false`, with `true` for the four cluster
 privileges in the table, `read`, `view_index_metadata` and Kibana's
 `all`, and `false` for `manage`, `manage_pipeline`, `write` and
-`delete_index`. Then `mise run tofu:plan` from the repo root: every
+`delete_index`. Then `mise run tofu:plan -- --all` from the repo root: every
 `elastic` stack plans with no changes and no `403`. A `403` names the
 privilege it lacked: add it to the table and the key here, never
 `superuser`.
