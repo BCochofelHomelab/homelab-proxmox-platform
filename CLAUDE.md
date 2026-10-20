@@ -178,6 +178,10 @@ unpack or enrollment block gets `and not ansible_check_mode`, after a
 version asserts get `ignore_errors: "{{ ansible_check_mode }}"` (a
 version bump isn't installed by a dry-run).
 
+Release rules (missed twice, #26 and #27): a PR's title is the squash
+commit, so it carries the highest type of its commits (`feat` > `fix` >
+the rest), lowercase; commitlint's `type-case`/`type-enum` are errors.
+
 Releases: semantic-release as core's (`.releaserc.js`, `package.json`,
 `package-lock.json` copied from core; `release.yml` is the human's to
 commit), tags `X.Y.Z` with no `v`, first release `1.0.0`.
