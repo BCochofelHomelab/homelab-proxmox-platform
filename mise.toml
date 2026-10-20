@@ -310,21 +310,29 @@ plan() {
 
 # Applies each tfplan tofu:plan saved, and only those: no confirmation
 # prompt, and tofu refuses a plan that's stale against the current state.
+# It takes no arguments (which stacks is tofu:plan's choice): mise appends
+# them to the last line, the call to `apply`, which refuses them, rather
+# than to the sops command.
 [tasks."tofu:apply"]
 description = "Apply the tfplans tofu:plan saved under the current directory, each removed once applied (read-write: ~/.secrets/homelab.yaml)"
 dir = "{{cwd}}"
 env = { SOPS_AGE_KEY_FILE = "{{env.HOME}}/.config/sops/age/bcochofel.txt" }
 shell = "bash -c"
 run = '''
-set -eo pipefail
-planned=$(terramate list | while read -r stack; do if [ -f "$stack/tfplan" ]; then echo "$stack"; fi; done)
-if [ -z "$planned" ]; then
-  echo "No tfplan here: run mise run tofu:plan first."
-  exit 0
-fi
-echo "Applying:"; printf '  %s\n' $planned
-exec sops exec-env ~/.secrets/homelab.yaml 'terramate run -- sh -c "if [ -f tfplan ]; then tofu apply tfplan && rm -f tfplan; fi"'
-'''
+apply() {
+  set -eo pipefail
+  if [ $# -gt 0 ]; then
+    echo "tofu:apply takes no arguments: it applies what tofu:plan planned (mise run tofu:plan -- $*, then mise run tofu:apply)." >&2
+    exit 2
+  fi
+  planned=$(terramate list | while read -r stack; do if [ -f "$stack/tfplan" ]; then echo "$stack"; fi; done)
+  if [ -z "$planned" ]; then
+    echo "No tfplan here: run mise run tofu:plan first."
+    exit 0
+  fi
+  echo "Applying:"; printf '  %s\n' $planned
+  exec sops exec-env ~/.secrets/homelab.yaml 'terramate run -- sh -c "if [ -f tfplan ]; then tofu apply tfplan && rm -f tfplan; fi"'
+}; apply'''
 
 # The inventory reads Proxmox with inventory@pve!ansible, whose secret
 # (PROXMOX_TOKEN_SECRET) comes from homelab.yaml; Ansible decrypts its own
