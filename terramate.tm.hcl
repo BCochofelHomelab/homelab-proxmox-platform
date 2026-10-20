@@ -1,9 +1,14 @@
-# Terramate project root. Every stack gets its backend and its providers
-# generated from terramate/*.tm.hcl, by tag: "proxmox" (VMs) or "elastic"
-# (Elastic content), exactly one per stack. Shared values reach a stack only
-# through these globals and the generated files, so change detection sees
-# them. Edit here or in terramate/, then `terramate generate`; never edit a
-# _terramate_generated_*.tf file by hand.
+# Terramate project root: the project settings and the globals. The code
+# generators live next to what they generate, and Terramate applies each
+# .tm.hcl file to the stacks in its directory and below:
+#   stacks/*.tm.hcl                       every stack: backend, providers (by
+#                                         tag: "proxmox" or "elastic", exactly
+#                                         one), VM module call, Fleet packages
+#   stacks/agent-policies/*.tm.hcl        the host groups' agent policies
+#   stacks/workspaces/workspace.tm.hcl    the workspaces' module call
+# Shared values reach a stack only through these globals and the generated
+# files, so change detection sees them. Edit a generator or a global, then
+# `terramate generate`; never edit a _terramate_generated_*.tf file by hand.
 
 terramate {
   required_version = "~> 0.17.0"
@@ -23,10 +28,6 @@ terramate {
       hcl_magic_header_comment_style = "#"
     }
   }
-}
-
-import {
-  source = "/terramate/*.tm.hcl"
 }
 
 # Non-secret inputs only. Secrets (TF_VAR_proxmox_api_token,
@@ -70,7 +71,7 @@ globals {
 
   # Fleet integration packages, one version each for the whole platform:
   # stacks/shared/fleet installs them, every agent policy's integrations use them
-  # (terramate/fleet.tm.hcl). Bumping one changes every stack that uses it,
+  # (stacks/fleet.tm.hcl). Bumping one changes every stack that uses it,
   # which is the change's scope. Versions compatible with Kibana 9.5.4 (the
   # package registry, kibana.version=9.5.4).
   fleet_packages = {

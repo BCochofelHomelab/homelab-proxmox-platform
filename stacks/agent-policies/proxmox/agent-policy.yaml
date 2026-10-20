@@ -1,5 +1,5 @@
 ---
-# Host group proxmox (terramate/agent-policy.tm.hcl): the Proxmox VE host,
+# Host group proxmox (stacks/agent-policies/agent-policy.tm.hcl): the Proxmox VE host,
 # pve1. Host logs and metrics (each VM is a kvm process). Its agent is
 # installed and enrolled by homelab-proxmox-core's Ansible, with this
 # policy's enrollment token.

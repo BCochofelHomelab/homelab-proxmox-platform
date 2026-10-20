@@ -47,7 +47,9 @@ were before the move. A path from a stack to the repo root is
 
 Terramate: `terramate.tm.hcl` holds the globals (provider pins, core's
 template and VM module ref, the workspace module's source and default ref,
-Elastic endpoints) and imports `terramate/*.tm.hcl`, which generate each
+Elastic endpoints); the generators sit next to what they generate, applied
+by directory (no import): `stacks/*.tm.hcl` (every stack),
+`stacks/agent-policies/*.tm.hcl`, `stacks/workspaces/workspace.tm.hcl`. They generate each
 stack's backend (HCP workspace `platform-<path with / as ->`, execution
 mode Local) and its one provider by tag: `proxmox` or `elastic`, exactly
 one (an `assert` fails `generate` otherwise). Kibana and Fleet reuse
@@ -59,7 +61,7 @@ its source). Core's tags are `X.Y.Z` since `2.0.0` (older ones are
 VM stacks hold `local.vms` (`main.tf`) and `outputs.tf`, by hand: never
 generate a file name another stack writes by hand (`terramate run`, so
 every `tofu:*`, refuses it as outdated; the pre-commit hook runs that
-check too). `terramate/vms.tm.hcl` generates core's module call (`data_disk`, core 8.1.0+: an empty scsi1
+check too). `stacks/vms.tm.hcl` generates core's module call (`data_disk`, core 8.1.0+: an empty scsi1
 disk, `/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi1`, which
 Ansible formats and mounts before Elasticsearch or Logstash writes data),
 and tags every VM `platform`, `terraform` and its Ansible

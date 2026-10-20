@@ -1,5 +1,5 @@
 ---
-# Host group core (terramate/agent-policy.tm.hcl): homelab-proxmox-core's
+# Host group core (stacks/agent-policies/agent-policy.tm.hcl): homelab-proxmox-core's
 # edge VMs, proxy (Caddy) and server01 (CoreDNS, Pi-hole), all in Docker
 # Compose. Their agents are installed and enrolled by homelab-proxmox-core's
 # Ansible, with this policy's enrollment token.
