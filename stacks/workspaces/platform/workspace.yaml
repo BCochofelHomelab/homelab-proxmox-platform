@@ -1,5 +1,5 @@
 ---
-# The platform workspace (terramate/workspace.tm.hcl): the Elastic Stack's
+# The platform workspace (stacks/workspaces/workspace.tm.hcl): the Elastic Stack's
 # own telemetry. Owner: sre-lead. Namespace = workspace id: "platform".
 display_name: Platform
 description: >-

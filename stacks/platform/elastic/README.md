@@ -1,6 +1,6 @@
 # platform/elastic
 
-The Elastic VMs: `es-01`..`03`, `kibana`, `ingest`. Their list is `local.vms` in `main.tf`; everything else is generated from `terramate/`.
+The Elastic VMs: `es-01`..`03`, `kibana`, `ingest`. Their list is `local.vms` in `main.tf`; everything else is generated from `stacks/*.tm.hcl`.
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements

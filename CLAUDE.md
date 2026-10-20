@@ -47,7 +47,9 @@ were before the move. A path from a stack to the repo root is
 
 Terramate: `terramate.tm.hcl` holds the globals (provider pins, core's
 template and VM module ref, the workspace module's source and default ref,
-Elastic endpoints) and imports `terramate/*.tm.hcl`, which generate each
+Elastic endpoints); the generators sit next to what they generate, applied
+by directory (no import): `stacks/*.tm.hcl` (every stack),
+`stacks/agent-policies/*.tm.hcl`, `stacks/workspaces/workspace.tm.hcl`. They generate each
 stack's backend (HCP workspace `platform-<path with / as ->`, execution
 mode Local) and its one provider by tag: `proxmox` or `elastic`, exactly
 one (an `assert` fails `generate` otherwise). Kibana and Fleet reuse
@@ -59,7 +61,7 @@ its source). Core's tags are `X.Y.Z` since `2.0.0` (older ones are
 VM stacks hold `local.vms` (`main.tf`) and `outputs.tf`, by hand: never
 generate a file name another stack writes by hand (`terramate run`, so
 every `tofu:*`, refuses it as outdated; the pre-commit hook runs that
-check too). `terramate/vms.tm.hcl` generates core's module call (`data_disk`, core 8.1.0+: an empty scsi1
+check too). `stacks/vms.tm.hcl` generates core's module call (`data_disk`, core 8.1.0+: an empty scsi1
 disk, `/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi1`, which
 Ansible formats and mounts before Elasticsearch or Logstash writes data),
 and tags every VM `platform`, `terraform` and its Ansible
@@ -70,7 +72,16 @@ share the host's name), `ansible_host` from cloud-init's `ipconfig0`. Its
 token is `inventory@pve!ansible` (role `AnsibleInventory`); user and token
 id are in the file, only `PROXMOX_TOKEN_SECRET` comes from `homelab.yaml`.
 Without it (the agent), the inventory is empty: `--syntax-check` still
-works. `tofu:*` are `terramate run` from `{{cwd}}`; `ansible:site` passes
+works. `tofu:*` are `terramate run` from `{{cwd}}`: `tofu:plan` plans only
+changed stacks (`--changed`: on main since HEAD^, on a branch since
+origin/main; `-- --all` every stack, `-- --git-change-base=<ref>`), after
+deleting every old `tfplan`; `tofu:apply` applies the stacks with a
+`tfplan` and removes it; `tofu:init` runs every stack. A stack that reads a
+file outside its folder lists it in `watch` (stack.tm.hcl: shared/fleet the
+CA, agent-client.crt/.key.sops and elastic.sops.yaml; every agent policy
+elastic.sops.yaml), or a change to that file plans nothing. Docs that build
+or check everything use `-- --all`. `ci:plan` stays on every stack (the
+runner has no origin/main). `ansible:site` passes
 extra args through `printf %q` inside the `sops exec-env` command, only
 when there are some (`printf '%q '` with none prints `''`).
 

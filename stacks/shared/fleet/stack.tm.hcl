@@ -4,6 +4,16 @@ stack {
   tags        = ["elastic", "shared", "fleet"]
   after       = ["/stacks/shared/data"]
   id          = "7d205fc1-ceb2-4713-b3aa-f4a1b3f3bd6f"
+  # Files outside this folder that it reads: a change to one marks this
+  # stack changed (mise run tofu:plan plans changed stacks only). The CA
+  # and the agents' client certificate are in Fleet's outputs;
+  # remote_monitoring_password is in elastic.sops.yaml.
+  watch = [
+    "/ansible/pki/elastic-ca.crt",
+    "/ansible/pki/agent-client.crt",
+    "/ansible/pki/agent-client.key.sops",
+    "/ansible/inventory/group_vars/elastic.sops.yaml",
+  ]
 }
 
 globals {

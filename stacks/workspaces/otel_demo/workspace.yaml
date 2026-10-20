@@ -1,5 +1,5 @@
 ---
-# The OpenTelemetry demo's workspace (terramate/workspace.tm.hcl): the
+# The OpenTelemetry demo's workspace (stacks/workspaces/workspace.tm.hcl): the
 # Astronomy Shop's traces, metrics and logs (its collector sets
 # data_stream.namespace = otel_demo), and the otel-demo VM's host data.
 # Owner: sre-lead. Namespace = workspace id: "otel_demo".

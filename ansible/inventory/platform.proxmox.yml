@@ -1,6 +1,6 @@
 ---
 # The inventory: Proxmox's own list of VMs, never OpenTofu's state. Every VM
-# tagged "platform" (the VM stacks tag them all, terramate/vms.tm.hcl),
+# tagged "platform" (the VM stacks tag them all, stacks/vms.tm.hcl),
 # grouped by its other tags: es-01 tagged "elasticsearch" is in group
 # elasticsearch.
 #

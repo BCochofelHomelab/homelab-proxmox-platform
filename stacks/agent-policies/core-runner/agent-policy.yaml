@@ -1,5 +1,5 @@
 ---
-# Host group core-runner (terramate/agent-policy.tm.hcl):
+# Host group core-runner (stacks/agent-policies/agent-policy.tm.hcl):
 # homelab-proxmox-core's dry-run runner, runner01. Host logs and metrics
 # only: Docker is masked there, by design. Its agent is installed and
 # enrolled by homelab-proxmox-core's Ansible, with this policy's enrollment

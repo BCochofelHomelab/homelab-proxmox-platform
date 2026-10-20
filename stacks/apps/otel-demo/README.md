@@ -1,6 +1,6 @@
 # apps/otel-demo
 
-The OpenTelemetry demo VM. Its definition is `local.vms` in `main.tf`; everything else is generated from `terramate/`.
+The OpenTelemetry demo VM. Its definition is `local.vms` in `main.tf`; everything else is generated from `stacks/*.tm.hcl`.
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements

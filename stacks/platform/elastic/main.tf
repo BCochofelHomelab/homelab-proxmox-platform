@@ -1,6 +1,6 @@
 # ----------------------------------------------------------------------------
 # The Elastic VMs. The module call, provider and inputs are generated
-# (terramate/vms.tm.hcl); this stack holds only its VMs. Everything inside
+# (stacks/vms.tm.hcl); this stack holds only its VMs. Everything inside
 # them (packages, certificates, configuration, enrollment) is Ansible's.
 #
 # name => VM. `groups` become Proxmox tags, and the Ansible inventory groups

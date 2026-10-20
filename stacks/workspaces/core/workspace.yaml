@@ -1,5 +1,5 @@
 ---
-# The core workspace (terramate/workspace.tm.hcl): homelab-proxmox-core's
+# The core workspace (stacks/workspaces/workspace.tm.hcl): homelab-proxmox-core's
 # hosts, the edge (Caddy, CoreDNS, Pi-hole), its dry-run runner and the
 # Proxmox VE host. Owner: sre-lead. Namespace = workspace id: "core".
 display_name: Core

@@ -124,7 +124,7 @@ repos:
         files: ^ansible/.*\.ya?ml$
 
       # Terramate: *.tm.hcl formatted, and every stack's generated code
-      # (terramate/*.tm.hcl) up to date with its config. Both rewrite the
+      # (stacks/**/*.tm.hcl) up to date with its config. Both rewrite the
       # files and fail; stage the result. `generate` also fails a stack
       # that isn't tagged exactly one of "proxmox" or "elastic".
       - id: terramate_fmt
